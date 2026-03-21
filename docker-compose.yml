@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  system-auction:
+    build: .
+    container_name: system-auction-app
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    restart: unless-stopped

@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Auction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Темна тема */
+            --bg-main: #121212;
+            --bg-card: #1c1c1e;
+            --bg-input: #2c2c2e;
+            --bg-hover: #3a3a3c;
+            --text-main: #ffffff;
+            --text-muted: #8e8e93;
+            --border-color: #2c2c2e;
+
+            --accent-color: #a855f7;
+            --accent-hover: #c084fc;
+            --success-color: #30d158;
+            --danger-color: #ff453a;
+
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            --anim-speed: 0.8s;
+        }
+
+        [data-theme="light"] {
+            /* Світла тема */
+            --bg-main: transparent;
+            --bg-card: #ffffff;
+            --bg-input: #f3f4f6;
+            --bg-hover: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+
+            --accent-color: #7e22ce;
+            --accent-hover: #9333ea;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { background-color: #121212; }
+
+        body {
+            font-family: 'Space Grotesk', monospace;
+            background: transparent;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            transition: color var(--anim-speed) ease-in-out;
+        }
+
+        .theme-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #f8f9fa;
+            z-index: -1;
+            clip-path: circle(0px at calc(100% - 80px) 40px);
+            transition: clip-path var(--anim-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+        [data-theme="light"] .theme-overlay {
+            clip-path: circle(150vw at calc(100% - 80px) 40px);
+        }
+
+        .app-header, .item-card, .search-input, .sort-btn, .sort-menu, .page-btn, .apply-btn, .sm-btn, .icon-btn, .search-btn {
+            transition: background-color var(--anim-speed) ease-in-out, border-color var(--anim-speed) ease-in-out, color var(--anim-speed) ease-in-out, box-shadow var(--anim-speed) ease-in-out;
+        }
+
+        .sm-btn:hover, .page-btn:hover, .search-btn:hover, .icon-btn:hover, .sort-btn:hover, .item-card:hover {
+            transition-duration: 0.2s !important;
+        }
+
+        /* --- HEADER --- */
+        .app-header {
+            position: sticky; top: 0; left: 0; width: 100%;
+            background-color: var(--bg-card); border-bottom: 1px solid var(--border-color);
+            padding: 16px 40px; display: flex; justify-content: space-between; align-items: center; z-index: 1000;
+        }
+        .logo { font-size: 1.4rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-color); }
+        .header-controls { display: flex; align-items: center; gap: 20px; }
+        .toggle-group { display: flex; gap: 8px; }
+
+        .sm-btn {
+            background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted);
+            padding: 8px 14px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.85rem; font-family: system-ui, sans-serif;
+        }
+        .sm-btn:hover { color: var(--text-main); border-color: var(--text-main); }
+        .sm-btn.active { color: #fff; background-color: var(--accent-color); border-color: var(--accent-color); }
+
+        /* --- 3D TOGGLE --- */
+        .theme-switch-wrapper { display: flex; align-items: center; z-index: 1001;}
+        .toggle { background: #0000; font-size: 10px; height: 3em; padding: 0; border-radius: 3em; border: 0; aspect-ratio: 1.8 / 1; position: relative; cursor: pointer; outline: none; }
+        .socket { box-shadow: -0.05em 0.1em 0.2em -0.2em white; background: #1a1a1a; position: absolute; inset: 0; border-radius: 3em; transition: background-color 0.8s ease; }
+        [data-theme="light"] .socket { background: #e0e0e0; box-shadow: none;}
+        .socket-shadow { position: absolute; inset: 0; opacity: 0; border-radius: inherit; box-shadow: 0 0.075em 0.1em 0 white; transition: opacity 0.8s ease; }
+        .face { position: absolute; inset: 0.15em; border-radius: 3em; transition: scale 0.8s ease; }
+        .face-plate { position: absolute; inset: 0; border-radius: inherit; box-shadow: -0.05em 0.1em 0.2em -0.2em white inset; background: conic-gradient(from 45deg, #0000, hsl(0 0% 100% / 0.05)), #2d2d2d; transition: background 0.8s ease; }
+        [data-theme="light"] .face-plate { background: conic-gradient(from 45deg, #0000, hsl(0 0% 100% / 0.05)), #f0f0f0; }
+        .face-shadow, .face-shadow::after, .face-shadow::before { position: absolute; inset: 0; border-radius: inherit; transition: all 0.8s ease; }
+        .face-shadow::after, .face-shadow::before { content: ''; }
+        .face-shadow::before { background: black; }
+        .face-shadow::after { background: white; scale: 0.5; }
+        .face-glowdrop { position: absolute; inset: 0; border-radius: inherit; scale: 0; transition: scale 0.8s ease; }
+        .face-glowdrop::after, .face-glowdrop::before { content: ''; height: 50%; aspect-ratio: 1; background: #fff; filter: blur(6px); position: absolute; z-index: -1; border-radius: 50%; }
+        .face-glowdrop::before { left: 4%; width: 56%; translate: 0 -25%; }
+        .face-glowdrop::after { bottom: 0; right: 12%; width: 34%; translate: 0 20%; }
+        .face-shine { position: absolute; inset: 0; opacity: 0; border-radius: 3em; transition: opacity 0.8s ease; }
+        .face-shine-shadow { position: absolute; inset: 0; border-radius: inherit; mask: conic-gradient(from 0deg, #fff 90deg, #0000 110deg 200deg, #fff 215deg 280deg, #0000 315deg); box-shadow: 0.075em 0 0.025em -0.025em hsl(0 0% 0% / 0.5) inset, -0.075em -0.05em 0.025em -0.025em hsl(0 0% 100% / 0.5) inset; }
+        .face-shine::before { content: ''; position: absolute; inset: 0.05em; border-radius: 3em; box-shadow: 0 -0.05em 0.025em -0.025em hsl(0 0% 50% / 0.5) inset, -0.025em 0.05em 0.025em -0.025em hsl(0 0% 100% / 0.5) inset; }
+        .face-shine::after { content: ''; position: absolute; inset: 0; background: conic-gradient(from 45deg, #0000, hsl(0 0% 100% / 0.25)); border-radius: 3em; }
+        .face-glows { position: absolute; inset: -0.075em; opacity: 0; border-radius: inherit; mix-blend-mode: plus-lighter; filter: blur(8px); z-index: 20; mask: conic-gradient(from 280deg, #0000, #fff 20deg 45deg, #0000 95deg), conic-gradient(from 110deg, #0000, #fff 20deg, #0000 95deg); transition: opacity 0.8s ease; }
+        .face-glows div { position: absolute; inset: 0; border-radius: inherit; filter: blur(4px); border: 0.1em solid white; }
+        .face svg { width: 25%; position: absolute; top: 50%; left: 50%; translate: -52% -48%; overflow: visible !important; }
+        .face svg path { transform-box: fill-box; transform-origin: center center; }
+        .trail-holder { z-index: 2; filter: blur(10px); }
+        .trail { stroke-width: 4; stroke-dasharray: 10 80; stroke-dashoffset: 10; opacity: 0; transition: all 0.8s ease; }
+        .outline { transition: stroke 0.8s ease; stroke: black; }
+        .inner-bg { fill: black; transition: fill 0.8s ease; }
+        .inner-face { fill: hsl(230 5% 80%); }
+        .toggle[aria-pressed='true'] .face { scale: 1.12; }
+        .toggle[aria-pressed='true'] .outline { stroke: hsl(0 0% 30%); }
+        .toggle[aria-pressed='true'] .inner-bg { fill: hsl(0 0% 20%); }
+        .toggle[aria-pressed='true'] .socket { box-shadow: -0.025em 0.08em 0.2em -0.1em white; }
+        .toggle[aria-pressed='true'] .glow { opacity: 0; }
+        .toggle[aria-pressed='true'] .face-glowdrop { scale: 1; }
+        .toggle[aria-pressed='true'] .face-shadow::before { translate: -15% 55%; filter: blur(1em); opacity: 0.35; }
+        .toggle[aria-pressed='true'] .face-shadow::after { filter: blur(0.5em); scale: 1; }
+        .toggle[aria-pressed='true'] .socket-shadow, .toggle[aria-pressed='true'] .face-glows, .toggle[aria-pressed='true'] .face-shine { opacity: 1; }
+        .toggle[aria-pressed='true'] .trail { transition: stroke-dashoffset 0s; opacity: 1; stroke-dashoffset: -70; }
+
+        /* --- LAYOUT --- */
+        .app-layout {
+            display: flex; width: 100%; max-width: 1500px; margin: 0 auto; padding: 30px 40px; gap: 40px; flex: 1;
+        }
+
+        /* --- LEFT SIDEBAR --- */
+        .app-sidebar { width: 250px; flex-shrink: 0; display: flex; flex-direction: column; gap: 30px; }
+        .sidebar-section h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; color: var(--text-main); }
+
+        /* Custom Sort Dropdown */
+        .sort-wrapper { position: relative; width: 100%; }
+        .sort-btn {
+            width: 100%; background-color: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);
+            padding: 12px 16px; border-radius: 12px; font-family: inherit; font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow);
+        }
+        .sort-btn:hover { border-color: var(--text-muted); }
+        .sort-menu {
+            position: absolute; top: calc(100% + 8px); left: 0; width: 100%; background-color: var(--bg-card);
+            border: 1px solid var(--border-color); border-radius: 12px; list-style: none; overflow: hidden;
+            display: none; z-index: 100; box-shadow: var(--shadow);
+        }
+        .sort-menu.show { display: block; }
+        .sort-menu li { padding: 12px 16px; cursor: pointer; font-size: 0.95rem; font-weight: 500;}
+        .sort-menu li:hover { background-color: var(--accent-color); color: #fff; transition-duration: 0.1s;}
+
+        /* Спеціальний блок "Тільки аукціони" */
+        .auction-toggle-card {
+            display: flex; align-items: center; justify-content: space-between;
+            background: linear-gradient(145deg, var(--bg-input), var(--bg-card));
+            border: 1px solid var(--border-color); padding: 14px 16px; border-radius: 12px;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            user-select: none;
+        }
+        .auction-toggle-card:hover { transform: translateY(-2px); border-color: var(--accent-color); }
+        .auction-toggle-card.active { border-color: var(--accent-color); box-shadow: 0 6px 20px rgba(168, 85, 247, 0.2); }
+        .auction-toggle-card span { font-weight: 700; font-size: 1.05rem; color: var(--text-main); }
+        .auction-toggle-card input { display: none; }
+
+        /* Категорії */
+        .filter-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+        .filter-item { display: flex; align-items: center; cursor: pointer; font-size: 0.95rem; color: var(--text-muted); user-select: none; transition: color 0.2s; }
+        .filter-item:hover { color: var(--text-main); }
+        .filter-item.active { color: var(--text-main); font-weight: 600; }
+        .checkbox { width: 18px; height: 18px; border: 2px solid var(--text-muted); border-radius: 4px; margin-right: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .filter-item.active .checkbox { background-color: var(--accent-color); border-color: var(--accent-color); }
+        .filter-item.active .checkbox::after { content: '✓'; color: #fff; font-size: 12px; font-weight: bold; }
+
+        /* --- БЛОК ЦІНИ --- */
+        .filter-price-inputs-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
+        .price-input-box { display: flex; align-items: center; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; flex: 1; transition: border-color 0.2s; }
+        .price-input-box:focus-within { border-color: var(--accent-color); }
+        .price-input-box span { color: var(--text-muted); margin-right: 4px; font-family: system-ui; }
+        .price-input-box input { width: 100%; background: transparent; border: none; color: var(--text-main); outline: none; font-family: inherit; font-size: 0.95rem; -moz-appearance: textfield; }
+        .price-input-box input::-webkit-outer-spin-button, .price-input-box input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .price-separator { color: var(--text-muted); font-weight: bold; }
+
+        /* Фіолетовий слайдер */
+        .dual-range-slider-container { margin-bottom: 25px; position: relative; padding: 0 5px; }
+        .dual-range-slider { position: relative; height: 4px; }
+        .dual-range-track { position: absolute; height: 100%; width: 100%; background-color: var(--bg-hover); border-radius: 5px; }
+        .dual-range-slider input[type="range"] { pointer-events: none; position: absolute; width: 100%; background: none; -webkit-appearance: none; appearance: none; outline: none; margin: 0; transform: translateY(-50%); top: 50%; }
+        .dual-range-slider input[type="range"]::-webkit-slider-thumb { pointer-events: auto; -webkit-appearance: none; appearance: none; height: 16px; width: 16px; border-radius: 50%; background-color: var(--accent-color); cursor: pointer; border: 2px solid var(--bg-card); transition: transform 0.1s, background-color 0.2s; }
+        .dual-range-slider input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); background-color: var(--accent-hover); }
+        .dual-range-slider input[type="range"]::-moz-range-thumb { pointer-events: auto; height: 16px; width: 16px; border-radius: 50%; background-color: var(--accent-color); cursor: pointer; border: 2px solid var(--bg-card); }
+
+        /* СТИЛЬОВИЙ КАСТОМНИЙ ЧЕКБОКС (Для доставки та аукціонів) */
+        .shipping-toggle-wrap { margin-bottom: 20px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.9rem; color: var(--text-muted); transition: color 0.2s; user-select: none; }
+        .shipping-toggle-wrap:hover { color: var(--text-main); }
+        .shipping-toggle-wrap input { display: none; }
+
+        .custom-checkbox { width: 18px; height: 18px; border: 2px solid var(--text-muted); border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+
+        /* Анімація для чекбоксів при кліку */
+        .shipping-toggle-wrap input:checked + .custom-checkbox,
+        .auction-toggle-card input:checked + .custom-checkbox {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .shipping-toggle-wrap input:checked + .custom-checkbox::after,
+        .auction-toggle-card input:checked + .custom-checkbox::after {
+            content: '✓'; color: #fff; font-size: 12px; font-weight: bold;
+        }
+
+        .apply-btn { width: 100%; background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; transition: all 0.2s ease; }
+        .apply-btn:hover { background-color: var(--accent-color); border-color: var(--accent-color); color: #fff; }
+
+        /* --- MAIN CONTENT --- */
+        .app-content { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+        /* Пошук по центру */
+        .top-actions { display: flex; justify-content: center; margin-bottom: 30px; }
+        .search-wrapper { width: 100%; max-width: 800px; display: flex; gap: 10px; }
+        .search-input { flex: 1; background-color: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 20px; border-radius: 12px; font-family: inherit; font-size: 0.95rem; outline: none; box-shadow: var(--shadow); }
+        .search-input:focus { border-color: var(--accent-color); }
+        .icon-btn, .search-btn { background-color: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 12px; cursor: pointer; box-shadow: var(--shadow); }
+        .icon-btn { width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; }
+        .search-btn { padding: 0 20px; font-weight: 600; font-size: 0.9rem;}
+        .icon-btn:hover, .search-btn:hover { border-color: var(--text-muted); }
+
+        /* --- AUCTION GRID & CARDS --- */
+        .auction-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; align-content: start; }
+        .item-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; position: relative; box-shadow: var(--shadow); }
+        .item-card:hover { transform: translateY(-4px); border-color: var(--accent-color); }
+        .card-img-wrap { width: 100%; height: 200px; background: transparent; margin-bottom: 16px; position: relative; display: flex; align-items: center; justify-content: center; }
+        .card-img-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .heart-icon { position: absolute; top: 0px; right: 0px; color: #d1d1d6; cursor: pointer; transition: color 0.2s; }
+        .heart-icon:hover { color: var(--danger-color); }
+        .item-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; height: 42px; overflow: hidden; line-height: 1.4; color: var(--text-main); }
+        .price { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px; }
+        .card-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 16px; font-weight: 500; }
+        .buy-btn { margin-top: auto; width: 100%; background-color: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
+        .buy-btn:hover { background-color: var(--bg-hover); }
+        .buy-btn.highlight { background-color: var(--accent-color); color: #fff; border-color: var(--accent-color);}
+        .buy-btn.highlight:hover { background-color: var(--accent-hover); border-color: var(--accent-hover);}
+
+        /* --- PAGINATION --- */
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 40px; flex-wrap: wrap; }
+        .page-btn { background-color: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow);}
+        .page-btn:hover { border-color: var(--text-muted); }
+        .page-btn.active { background-color: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: var(--border-color); }
+        .page-dots { font-weight: bold; color: var(--text-muted); align-self: center; }
+
+        /* --- LOADER --- */
+        #full-page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 99999; transition: opacity 0.5s; background-color: #121212; }
+        #full-page-loader.hidden { opacity: 0; pointer-events: none; }
+        .loader.coil { height: 50px; width: 50px; position: relative; }
+        .loader.coil span { position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,.1); border-top-color: var(--accent-color); animation: coil-spin 1.5s infinite; }
+        .loader.coil span:nth-child(2){ inset: 10%; animation-delay: .1s; }
+        .loader.coil span:nth-child(3){ inset: 20%; animation-delay: .2s; }
+        @keyframes coil-spin { 0%,100%{ transform: rotate(0deg); } 50%{ transform: rotate(180deg); } }
+
+        /* --- DETAIL VIEW --- */
+        #detail-view { display: none; width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px;}
+        .detail-content { display: flex; gap: 40px; margin-top: 20px; }
+        .gallery-container { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .main-image-container { width: 100%; height: 400px; background: var(--bg-card); border-radius: 16px; display: flex; align-items: center; justify-content: center; padding: 20px; cursor: zoom-in; box-shadow: var(--shadow); border: 1px solid var(--border-color);}
+        .main-image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .thumbnails-row { display: flex; gap: 10px; overflow-x: auto; }
+        .thumbnail { width: 70px; height: 70px; background: var(--bg-card); border-radius: 8px; padding: 5px; cursor: pointer; border: 2px solid transparent; }
+        .thumbnail.active { border-color: var(--accent-color); }
+        .thumbnail img { width: 100%; height: 100%; object-fit: contain; }
+        .detail-info { flex: 1; }
+        .detail-info h2 { margin-bottom: 20px; font-size: 1.5rem; }
+        .desc-box { background-color: var(--bg-card); padding: 20px; border-radius: 12px; margin-top: 20px; line-height: 1.6; color: var(--text-muted); border: 1px solid var(--border-color); box-shadow: var(--shadow);}
+        .timer-text { font-size: 1.1rem; font-weight: bold; color: var(--danger-color); margin-bottom: 10px; }
+
+        /* Lightbox & Notification */
+        .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .lightbox.show { opacity: 1; visibility: visible; }
+        .lightbox-content { max-width: 90vw; max-height: 90vh; border-radius: 8px; transition: transform 0.3s; }
+        .lightbox-close { position: absolute; top: 20px; right: 30px; font-size: 3rem; color: #fff; cursor: pointer; }
+        .notification { position: fixed; top: 90px; right: 20px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); padding: 16px 24px; border-radius: 12px; border-left: 4px solid var(--accent-color); z-index: 2000; animation: slideIn 0.4s; }
+        @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+
+        /* Мобільна Адаптивність */
+        @media (max-width: 900px) {
+            .app-layout { flex-direction: column; padding: 20px; gap: 20px;}
+            .app-sidebar { width: 100%; display: flex; flex-direction: column; gap: 25px; }
+            .filter-list { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 10px; gap: 12px; scrollbar-width: none; }
+            .filter-list::-webkit-scrollbar { display: none; }
+            .filter-item { background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 20px; white-space: nowrap; box-shadow: var(--shadow); }
+            .filter-item .checkbox { display: none; }
+            .filter-item.active { background-color: var(--text-main); color: var(--bg-main); border-color: var(--text-main); }
+        }
+        @media (max-width: 768px) {
+            .app-header { padding: 15px 20px; flex-direction: column; gap: 15px; align-items: stretch; }
+            .header-controls { width: 100%; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; }
+            .theme-switch-wrapper { margin-left: auto; }
+            .detail-content { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="theme-overlay"></div>
+    <div id="full-page-loader"><div class="loader coil"><span></span><span></span><span></span><span></span></div></div>
+
+    <header class="app-header">
+        <div class="logo">System Auction</div>
+        <div class="header-controls">
+            <div class="toggle-group lang-switch-container">
+                <button class="sm-btn active" data-lang="uk" onclick="setSiteLanguage('uk', this)">UA</button>
+                <button class="sm-btn" data-lang="es" onclick="setSiteLanguage('es', this)">ES</button>
+                <button class="sm-btn" data-lang="en" onclick="setSiteLanguage('en', this)">EN</button>
+            </div>
+            <div class="toggle-group currency-switch-container">
+                <button class="sm-btn active" data-currency="USD" onclick="changeCurrency('USD', this)">$ USD</button>
+                <button class="sm-btn" data-currency="EUR" onclick="changeCurrency('EUR', this)">€ EUR</button>
+                <button class="sm-btn" data-currency="UAH" onclick="changeCurrency('UAH', this)">₴ UAH</button>
+            </div>
+
+            <div class="theme-switch-wrapper">
+                <button aria-pressed="false" class="toggle" onclick="toggleTheme()" aria-label="Toggle Theme">
+                    <div class="socket"><div class="socket-shadow"></div></div>
+                    <div class="face">
+                        <div class="face-shadow"></div>
+                        <div class="face-glowdrop"></div>
+                        <div class="face-plate"></div>
+                        <div class="face-shine"><div class="face-shine-shadow"></div></div>
+                        <div class="face-glows"><div></div></div>
+                        <svg class="glow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path class="glow-path" d="M9.8815 1.36438L9.88141 1.36429C9.70639 1.18942 9.48342 1.07041 9.24073 1.02235C8.99803 0.974286 8.74653 0.999323 8.51808 1.09429L8.51753 1.09452C4.54484 2.75146 1.75 6.6732 1.75 11.25C1.75 17.3262 6.67489 22.25 12.75 22.25C14.9217 22.2501 17.0448 21.6075 18.852 20.4032C20.6591 19.1989 22.0695 17.4868 22.9055 15.4825L22.9058 15.4818C23.0007 15.2532 23.0256 15.0015 22.9774 14.7587C22.9291 14.5159 22.8099 14.2929 22.6348 14.118C22.4597 13.9431 22.2366 13.8241 21.9937 13.7761C21.7509 13.7281 21.4993 13.7533 21.2708 13.8484L21.2707 13.8485C20.2346 14.2801 19.1231 14.5016 18.0007 14.5H18C15.7457 14.5 13.5837 13.6045 11.9896 12.0104C10.3955 10.4163 9.5 8.25433 9.5 5.99999L9.5 5.99927C9.49838 4.8769 9.71983 3.76541 10.1515 2.72938C10.2468 2.50072 10.2721 2.24888 10.224 2.00584C10.1759 1.76281 10.0567 1.53954 9.8815 1.36438Z" stroke-width="0"/></svg>
+                        <svg class="trail-holder" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path class="trail" d="M9.8815 1.36438L9.88141 1.36429C9.70639 1.18942 9.48342 1.07041 9.24073 1.02235C8.99803 0.974286 8.74653 0.999323 8.51808 1.09429L8.51753 1.09452C4.54484 2.75146 1.75 6.6732 1.75 11.25C1.75 17.3262 6.67489 22.25 12.75 22.25C14.9217 22.2501 17.0448 21.6075 18.852 20.4032C20.6591 19.1989 22.0695 17.4868 22.9055 15.4825L22.9058 15.4818C23.0007 15.2532 23.0256 15.0015 22.9774 14.7587C22.9291 14.5159 22.8099 14.2929 22.6348 14.118C22.4597 13.9431 22.2366 13.8241 21.9937 13.7761C21.7509 13.7281 21.4993 13.7533 21.2708 13.8484L21.2707 13.8485C20.2346 14.2801 19.1231 14.5016 18.0007 14.5H18C15.7457 14.5 13.5837 13.6045 11.9896 12.0104C10.3955 10.4163 9.5 8.25433 9.5 5.99999L9.5 5.99927C9.49838 4.8769 9.71983 3.76541 10.1515 2.72938C10.2468 2.50072 10.2721 2.24888 10.224 2.00584C10.1759 1.76281 10.0567 1.53954 9.8815 1.36438Z" stroke="#2CC6FE" stroke-linecap="round" stroke-dasharray="7 80" stroke-dashoffset="40"/></svg>
+                        <svg class="main" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g><path class="outline" d="M9.8815 1.36438L9.88141 1.36429C9.70639 1.18942 9.48342 1.07041 9.24073 1.02235C8.99803 0.974286 8.74653 0.999323 8.51808 1.09429L8.51753 1.09452C4.54484 2.75146 1.75 6.6732 1.75 11.25C1.75 17.3262 6.67489 22.25 12.75 22.25C14.9217 22.2501 17.0448 21.6075 18.852 20.4032C20.6591 19.1989 22.0695 17.4868 22.9055 15.4825L22.9058 15.4818C23.0007 15.2532 23.0256 15.0015 22.9774 14.7587C22.9291 14.5159 22.8099 14.2929 22.6348 14.118C22.4597 13.9431 22.2366 13.8241 21.9937 13.7761C21.7509 13.7281 21.4993 13.7533 21.2708 13.8484L21.2707 13.8485C20.2346 14.2801 19.1231 14.5016 18.0007 14.5H18C15.7457 14.5 13.5837 13.6045 11.9896 12.0104C10.3955 10.4163 9.5 8.25433 9.5 5.99999L9.5 5.99927C9.49838 4.8769 9.71983 3.76541 10.1515 2.72938C10.2468 2.50072 10.2721 2.24888 10.224 2.00584C10.1759 1.76281 10.0567 1.53954 9.8815 1.36438Z" fill="black" stroke="black" stroke-width="2"/></g>
+                            <g class="inner">
+                                <path class="inner-face" fill-rule="evenodd" clip-rule="evenodd" d="M9.528 1.71799C9.63312 1.82308 9.70465 1.95704 9.73349 2.10286C9.76234 2.24868 9.7472 2.39979 9.69 2.53699C9.23282 3.6342 8.99828 4.81134 9 5.99999C9 8.38694 9.94821 10.6761 11.636 12.3639C13.3239 14.0518 15.6131 15 18 15C19.1886 15.0017 20.3658 14.7672 21.463 14.31C21.6001 14.2529 21.7511 14.2378 21.8968 14.2666C22.0425 14.2954 22.1763 14.3668 22.2814 14.4717C22.3865 14.5767 22.458 14.7105 22.487 14.8562C22.5159 15.0018 22.501 15.1528 22.444 15.29C21.646 17.2032 20.2997 18.8376 18.5747 19.9871C16.8496 21.1367 14.823 21.7501 12.75 21.75C6.951 21.75 2.25 17.05 2.25 11.25C2.25 6.88199 4.917 3.13799 8.71 1.55599C8.84707 1.49901 8.99797 1.48399 9.14359 1.51282C9.28921 1.54166 9.42299 1.61307 9.528 1.71799Z"/>
+                                <path class="inner-bg" fill-rule="evenodd" clip-rule="evenodd" d="M9.528 1.71799C9.63312 1.82308 9.70465 1.95704 9.73349 2.10286C9.76234 2.24868 9.7472 2.39979 9.69 2.53699C9.23282 3.6342 8.99828 4.81134 9 5.99999C9 8.38694 9.94821 10.6761 11.636 12.3639C13.3239 14.0518 15.6131 15 18 15C19.1886 15.0017 20.3658 14.7672 21.463 14.31C21.6001 14.2529 21.7511 14.2378 21.8968 14.2666C22.0425 14.2954 22.1763 14.3668 22.2814 14.4717C22.3865 14.5767 22.458 14.7105 22.487 14.8562C22.5159 15.0018 22.501 15.1528 22.444 15.29C21.646 17.2032 20.2997 18.8376 18.5747 19.9871C16.8496 21.1367 14.823 21.7501 12.75 21.75C6.951 21.75 2.25 17.05 2.25 11.25C2.25 6.88199 4.917 3.13799 8.71 1.55599C8.84707 1.49901 8.99797 1.48399 9.14359 1.51282C9.28921 1.54166 9.42299 1.61307 9.528 1.71799Z"/>
+                            </g>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-layout" id="main-view">
+
+        <aside class="app-sidebar">
+
+            <div class="sidebar-section">
+                <h3 id="lbl-sort">Сортування</h3>
+                <div class="sort-wrapper">
+                    <button class="sort-btn" onclick="toggleDropdown(event)" id="sortTrigger">
+                        <span id="current-sort-display">Найкращий збіг</span>
+                        <span>▼</span>
+                    </button>
+                    <ul class="sort-menu" id="customSortMenu">
+                        <li onclick="selectSort('', 'Найкращий збіг', 'sortBest')" id="sort-opt-0">Найкращий збіг</li>
+                        <li onclick="selectSort('price_asc', 'Від дешевого', 'sortLowHigh')" id="sort-opt-1">Від дешевого</li>
+                        <li onclick="selectSort('price_desc', 'Від дорогого', 'sortHighLow')" id="sort-opt-2">Від дорогого</li>
+                        <li onclick="selectSort('new', 'Нові лоти', 'sortNew')" id="sort-opt-3">Нові лоти</li>
+                        <li onclick="selectSort('ending_soon', 'Скоро закінчуються', 'sortEnding')" id="sort-opt-4">Скоро закінчуються</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <label class="auction-toggle-card" id="auctionCard">
+                    <span id="f-auctions">Тільки аукціони</span>
+                    <input type="checkbox" id="auction-tab-btn" onchange="toggleAuctions()">
+                    <div class="custom-checkbox"></div>
+                </label>
+            </div>
+
+            <div class="sidebar-section">
+                <h3 id="filter-title">Категорії</h3>
+                <ul class="filter-list">
+                    <li class="filter-item" onclick="filterByType('Smartphone', this)"><div class="checkbox"></div> <span id="f-phone">Смартфони</span></li>
+                    <li class="filter-item" onclick="filterByType('Laptop', this)"><div class="checkbox"></div> <span id="f-laptop">Ноутбуки</span></li>
+                    <li class="filter-item" onclick="filterByType('Console', this)"><div class="checkbox"></div> <span id="f-console">Консолі</span></li>
+                    <li class="filter-item" onclick="filterByType('TV', this)"><div class="checkbox"></div> <span id="f-tv">Телевізори</span></li>
+                    <li class="filter-item" onclick="filterByType('Camera', this)"><div class="checkbox"></div> <span id="f-camera">Камери</span></li>
+                    <li class="filter-item" onclick="filterByType('Watch', this)"><div class="checkbox"></div> <span id="f-watch">Годинники</span></li>
+                    <li class="filter-item" onclick="filterByType('Headphones', this)"><div class="checkbox"></div> <span id="f-audio">Навушники</span></li>
+                    <li class="filter-item" onclick="filterByType('Sim Racing', this)"><div class="checkbox"></div> <span id="f-sim">Сімрейсинг</span></li>
+                    <li class="filter-item" onclick="filterByType('pc components', this)"><div class="checkbox"></div> <span id="f-pc">ПК Компоненти</span></li>
+                    <li class="filter-item" onclick="filterByType('drones', this)"><div class="checkbox"></div> <span id="f-drone">Дрони</span></li>
+                    <li class="filter-item" onclick="filterByType('retro gaming', this)"><div class="checkbox"></div> <span id="f-retro">Ретро ігри</span></li>
+                    <li class="filter-item" onclick="filterByType('3d printing', this)"><div class="checkbox"></div> <span id="f-3d">3D Друк</span></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h3 id="lbl-price-title" style="margin-bottom: 15px;">Ціна, <span id="lbl-price-currency">USD</span></h3>
+
+                <div class="filter-price-inputs-wrap">
+                    <div class="price-input-box">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" id="minPriceInput" value="1">
+                    </div>
+                    <div class="price-separator">-</div>
+                    <div class="price-input-box">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" id="maxPriceInput" value="10000">
+                    </div>
+                </div>
+
+                <div class="dual-range-slider-container">
+                    <div class="dual-range-slider">
+                        <div class="dual-range-track" id="sliderTrack"></div>
+                        <input type="range" id="minPriceRange" min="1" max="10000" value="1" step="1">
+                        <input type="range" id="maxPriceRange" min="1" max="10000" value="10000" step="1">
+                    </div>
+                </div>
+
+                <label class="shipping-toggle-wrap">
+                    <input type="checkbox" id="includeShippingCheckbox">
+                    <div class="custom-checkbox"></div>
+                    <span id="lbl-include-shipping">З врахуванням доставки</span>
+                </label>
+
+                <button class="apply-btn" id="btn-apply-price" onclick="applyPriceFilter()">Застосувати</button>
+            </div>
+        </aside>
+
+        <main class="app-content">
+            <div class="top-actions">
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Пошук системи..." onkeydown="if(event.key === 'Enter') triggerSearch()">
+                    <button class="icon-btn" title="Пошук по фото" onclick="document.getElementById('imageInput').click()">📷</button>
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="searchByImage()">
+                    <button class="search-btn" id="btn-search" onclick="triggerSearch()">Знайти</button>
+                </div>
+            </div>
+
+            <div id="auction-results" class="auction-grid"></div>
+
+            <div class="pagination" id="pagination-container"></div>
+        </main>
+    </div>
+
+    <div class="app-layout" id="detail-view">
+        <div style="width: 100%;">
+            <button class="page-btn" onclick="goBack()" id="btn-back" style="margin-bottom: 20px;">← Назад</button>
+            <div id="single-item-container"></div>
+        </div>
+    </div>
+
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+        <img class="lightbox-content" id="lightbox-img" onwheel="zoomImage(event)">
+    </div>
+
+    <script>
+        let currentQuery = '';
+        let currentSort = '';
+        let currentPage = 1;
+        let currentBuyingOptions = '';
+        let currentCategory = '';
+        let isAuctionTabActive = false;
+        const itemsPerPage = 24;
+        let originalDescription = '';
+        let currentLang = 'uk';
+        let totalFound = 0;
+        let auctionTimerInterval;
+        let updateTimerInterval;
+        let priceCheckInterval;
+        let currentCurrency = 'USD';
+        let exchangeRates = { USD: 1, EUR: 0.92, UAH: 39.5 };
+        let userCountryCode = '';
+        let isPolling = false;
+
+        let isPriceFilterActive = false;
+        let isIncludeShippingActive = false;
+        let activeMinPrice = '';
+        let activeMaxPrice = '';
+
+        let minPriceInput = document.getElementById('minPriceInput');
+        let maxPriceInput = document.getElementById('maxPriceInput');
+        let minPriceRange = document.getElementById('minPriceRange');
+        let maxPriceRange = document.getElementById('maxPriceRange');
+        let sliderTrack = document.getElementById('sliderTrack');
+
+        function updateSliderTrack() {
+            const minPercent = (minPriceRange.value - minPriceRange.min) / (minPriceRange.max - minPriceRange.min) * 100;
+            const maxPercent = (maxPriceRange.value - maxPriceRange.min) / (maxPriceRange.max - maxPriceRange.min) * 100;
+            sliderTrack.style.background = `linear-gradient(to right, var(--bg-hover) ${minPercent}%, var(--accent-color) ${minPercent}%, var(--accent-color) ${maxPercent}%, var(--bg-hover) ${maxPercent}%)`;
+        }
+
+        function updateInputsFromSlider() {
+            minPriceInput.value = minPriceRange.value;
+            maxPriceInput.value = maxPriceRange.value;
+            updateSliderTrack();
+        }
+
+        function updateSliderFromInputs() {
+            let minVal = parseInt(minPriceInput.value);
+            let maxVal = parseInt(maxPriceInput.value);
+            if (minVal < minPriceRange.min) minVal = minPriceRange.min;
+            if (minVal > parseInt(maxPriceRange.value) - 1) minVal = parseInt(maxPriceRange.value) - 1;
+            if (maxVal > maxPriceRange.max) maxVal = maxPriceRange.max;
+            if (maxVal < parseInt(minPriceRange.value) + 1) maxVal = parseInt(minPriceRange.value) + 1;
+            minPriceInput.value = minVal;
+            maxPriceInput.value = maxVal;
+            minPriceRange.value = minVal;
+            maxPriceRange.value = maxVal;
+            updateSliderTrack();
+        }
+
+        minPriceRange.addEventListener('input', () => {
+            if (parseInt(minPriceRange.value) >= parseInt(maxPriceRange.value)) minPriceRange.value = parseInt(maxPriceRange.value) - 1;
+            updateInputsFromSlider();
+        });
+
+        maxPriceRange.addEventListener('input', () => {
+            if (parseInt(maxPriceRange.value) <= parseInt(minPriceRange.value)) maxPriceRange.value = parseInt(minPriceRange.value) + 1;
+            updateInputsFromSlider();
+        });
+
+        minPriceInput.addEventListener('change', updateSliderFromInputs);
+        maxPriceInput.addEventListener('change', updateSliderFromInputs);
+
+        const translations = {
+            uk: {
+                searchPlaceholder: "Пошук системи...", btnSearch: "Знайти",
+                lblSort: "Сортування",
+                sortBest: "Найкращий збіг", sortLowHigh: "Від дешевого", sortHighLow: "Від дорогого",
+                sortNew: "Нові лоти", sortEnding: "Скоро закінчуються", btnAuctions: "Тільки аукціони",
+                fPhone: "Смартфони", fLaptop: "Ноутбуки", fConsole: "Консолі", fTv: "Телевізори",
+                fCamera: "Камери", fWatch: "Годинники", fAudio: "Навушники", fSim: "Сімрейсинг",
+                fPc: "ПК Компоненти", fDrone: "Дрони", fRetro: "Ретро ігри", f3d: "3D Друк",
+                btnPrev: "← Назад", btnNext: "Далі →", btnBack: "← Назад",
+                noItems: "Нічого не знайдено за цим запитом.", viewItem: "ПЕРЕГЛЯНУТИ", placeBid: "ЗРОБИТИ СТАВКУ",
+                condition: "Стан", descTitle: "Опис", openEbay: "Відкрити на eBay", ended: "Завершено",
+                timeLeft: "Залишилось", auction: "АУКЦІОН", bids: "ставок", filterTitle: "Категорії",
+                shippingTo: "Доставка в", freeShipping: "Безкоштовно", totalPrice: "Разом", shippingUnknown: "неможлива",
+                filterPriceTitle: "Ціна", applyFilter: "Застосувати",
+                lblIncludeShipping: "З врахуванням доставки"
+            },
+            en: {
+                searchPlaceholder: "Search system...", btnSearch: "Search",
+                lblSort: "Sort by",
+                sortBest: "Best Match", sortLowHigh: "Price: Low to High", sortHighLow: "Price: High to Low",
+                sortNew: "Newly Listed", sortEnding: "Ending Soon", btnAuctions: "Auctions Only",
+                fPhone: "Smartphones", fLaptop: "Laptops", fConsole: "Consoles", fTv: "TVs",
+                fCamera: "Cameras", fWatch: "Watches", fAudio: "Headphones", fSim: "Sim Racing",
+                fPc: "PC Parts", fDrone: "Drones", fRetro: "Retro Gaming", f3d: "3D Printing",
+                btnPrev: "← Prev", btnNext: "Next →", btnBack: "← Back",
+                noItems: "No items found for this query.", viewItem: "VIEW", placeBid: "PLACE BID",
+                condition: "Condition", descTitle: "Description", openEbay: "Open on eBay", ended: "Ended",
+                timeLeft: "Left", auction: "AUCTION", bids: "bids", filterTitle: "Categories",
+                shippingTo: "Shipping to", freeShipping: "Free", totalPrice: "Total", shippingUnknown: "unavailable",
+                filterPriceTitle: "Price", applyFilter: "Apply",
+                lblIncludeShipping: "Inc. shipping"
+            },
+            es: {
+                searchPlaceholder: "Buscar sistema...", btnSearch: "Buscar",
+                lblSort: "Ordenar por",
+                sortBest: "Mejor resultado", sortLowHigh: "Precio: Menor", sortHighLow: "Precio: Mayor",
+                sortNew: "Nuevos", sortEnding: "Finalizando", btnAuctions: "Solo subastas",
+                fPhone: "Teléfonos", fLaptop: "Portátiles", fConsole: "Consolas", fTv: "Televisores",
+                fCamera: "Cámaras", fWatch: "Relojes", fAudio: "Auriculares", fSim: "Sim Racing",
+                fPc: "PC Componentes", fDrone: "Drones", fRetro: "Juegos Retro", f3d: "Impresión 3D",
+                btnPrev: "← Ant", btnNext: "Sig →", btnBack: "← Volver",
+                noItems: "No se encontraron artículos.", viewItem: "VER", placeBid: "PUJAR",
+                condition: "Condición", descTitle: "Descripción", openEbay: "Abrir en eBay", ended: "Finalizado",
+                timeLeft: "Queda", auction: "SUBASTA", bids: "pujas", filterTitle: "Categorías",
+                shippingTo: "Envío a", freeShipping: "Gratis", totalPrice: "Total", shippingUnknown: "no disponible",
+                filterPriceTitle: "Precio", applyFilter: "Aplicar",
+                lblIncludeShipping: "Con envío"
+            }
+        };
+
+        const popularSearches = {
+            'pc components': '(RTX 4090,Ryzen 9,Intel Core i9,Motherboard,DDR5)',
+            'drones': '(DJI Mini 4 Pro,DJI Avata,FPV Drone)',
+            'retro gaming': '(GameBoy Advance,SEGA Genesis,Nintendo 64)',
+            '3d printing': '(Bambu Lab,Creality Ender 3,Prusa MK4)',
+            'Smartphone': '(iPhone 15,Samsung Galaxy S24,Google Pixel 8)',
+            'Laptop': '(MacBook Air M3,Dell XPS 15,HP Spectre x360)',
+            'Console': '(PlayStation 5,Xbox Series X,Nintendo Switch OLED)',
+            'Watch': '(Apple Watch Ultra 2,Samsung Galaxy Watch 6,Garmin Fenix 7)',
+            'Headphones': '(Sony WH-1000XM5,Bose QuietComfort Ultra,AirPods Pro 2)',
+            'Camera': '(Sony A7 IV,Canon R5,Fujifilm X-T5)',
+            'TV': '(LG OLED,Samsung QLED,Sony Bravia)',
+            'Sim Racing': '(Fanatec DD,Moza R9,Simucube 2)'
+        };
+
+        function toggleDropdown(event) {
+            event.preventDefault();
+            document.getElementById("customSortMenu").classList.toggle("show");
+        }
+
+        function selectSort(value, fallbackText, translationKey) {
+            const t = translations[currentLang];
+            document.getElementById('current-sort-display').innerText = t[translationKey] || fallbackText;
+            currentSort = value;
+            document.getElementById("customSortMenu").classList.remove("show");
+            if (currentQuery || currentCategory) { currentPage = 1; fetchAuctions(); }
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.closest('.sort-wrapper')) {
+                const el = document.getElementById("customSortMenu");
+                if (el) el.classList.remove('show');
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const toggleBtn = document.querySelector('.toggle');
+            if (body.getAttribute('data-theme') === 'light') {
+                body.removeAttribute('data-theme');
+                if(toggleBtn) toggleBtn.setAttribute('aria-pressed', 'false');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                if(toggleBtn) toggleBtn.setAttribute('aria-pressed', 'true');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.setAttribute('data-theme', 'light');
+            const toggleBtn = document.querySelector('.toggle');
+            if(toggleBtn) toggleBtn.setAttribute('aria-pressed', 'true');
+        }
+
+        async function initExchangeRates() {
+            try {
+                const res = await fetch('https://open.er-api.com/v6/latest/USD');
+                const data = await res.json();
+                if (data && data.rates) { exchangeRates.EUR = data.rates.EUR; exchangeRates.UAH = data.rates.UAH; }
+            } catch (e) {}
+        }
+
+        async function initUserLocation() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                const res = await fetch('https://api.country.is/', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if(res.ok) { const data = await res.json(); userCountryCode = data.country; }
+            } catch(e) {}
+        }
+
+        function getCountryName(code, lang) {
+            if (!code) return '';
+            try {
+                const localeMap = { 'uk': 'uk-UA', 'en': 'en-US', 'es': 'es-ES' };
+                const displayNames = new Intl.DisplayNames([localeMap[lang]], { type: 'region' });
+                return displayNames.of(code);
+            } catch (e) { return code; }
+        }
+
+        function convertPrice(price, currency) {
+            let val = parseFloat(price);
+            if (isNaN(val)) return `${price} ${currency}`;
+            if (currency !== 'USD' && exchangeRates[currency]) val = val / exchangeRates[currency];
+            const convertedVal = val * (exchangeRates[currentCurrency] || 1);
+            if (currentCurrency === 'UAH') return `${convertedVal.toFixed(2)} ₴`;
+            if (currentCurrency === 'EUR') return `€${convertedVal.toFixed(2)}`;
+            return `$${convertedVal.toFixed(2)}`;
+        }
+
+        function changeCurrency(currency, btnElement) {
+            currentCurrency = currency;
+            if (btnElement) {
+                document.querySelectorAll('.currency-switch-container .sm-btn').forEach(btn => btn.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+            document.querySelectorAll('.price, #detail-price, .dynamic-price').forEach(el => {
+                const origPrice = el.getAttribute('data-original-price');
+                const origCurr = el.getAttribute('data-original-currency');
+                if (origPrice && origCurr) el.innerText = convertPrice(origPrice, origCurr);
+            });
+
+            let curSymbol = currency === 'EUR' ? '€' : (currency === 'UAH' ? '₴' : '$');
+            document.querySelectorAll('.currency-symbol').forEach(el => el.innerText = curSymbol);
+            document.getElementById('lbl-price-currency').innerText = currency;
+
+            let rangeMin, rangeMax;
+            if (currency === 'UAH') { rangeMin = 100; rangeMax = 500000; }
+            else { rangeMin = 1; rangeMax = 10000; }
+
+            minPriceRange.min = rangeMin; minPriceRange.max = rangeMax;
+            maxPriceRange.min = rangeMin; maxPriceRange.max = rangeMax;
+            minPriceRange.value = rangeMin; maxPriceRange.value = rangeMax;
+            minPriceInput.value = rangeMin; maxPriceInput.value = rangeMax;
+            updateSliderTrack();
+        }
+
+        function setSiteLanguage(lang, btnElement) {
+            currentLang = lang;
+            const t = translations[lang];
+
+            document.getElementById('lbl-sort').innerText = t.lblSort;
+            document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+            document.getElementById('btn-search').innerText = t.btnSearch;
+            document.getElementById('f-auctions').innerText = t.btnAuctions;
+
+            document.getElementById('f-phone').innerText = t.fPhone;
+            document.getElementById('f-laptop').innerText = t.fLaptop;
+            document.getElementById('f-console').innerText = t.fConsole;
+            document.getElementById('f-tv').innerText = t.fTv;
+            document.getElementById('f-camera').innerText = t.fCamera;
+            document.getElementById('f-watch').innerText = t.fWatch;
+            document.getElementById('f-audio').innerText = t.fAudio;
+            document.getElementById('f-sim').innerText = t.fSim;
+            document.getElementById('f-pc').innerText = t.fPc;
+            document.getElementById('f-drone').innerText = t.fDrone;
+            document.getElementById('f-retro').innerText = t.fRetro;
+            document.getElementById('f-3d').innerText = t.f3d;
+
+            document.getElementById('filter-title').innerText = t.filterTitle;
+            document.getElementById('btn-apply-price').innerText = t.applyFilter;
+
+            const lblIncShip = document.getElementById('lbl-include-shipping');
+            if (lblIncShip) lblIncShip.innerText = t.lblIncludeShipping;
+            const btnBack = document.getElementById('btn-back');
+            if (btnBack) btnBack.innerText = t.btnBack;
+
+            document.getElementById('sort-opt-0').innerText = t.sortBest;
+            document.getElementById('sort-opt-1').innerText = t.sortLowHigh;
+            document.getElementById('sort-opt-2').innerText = t.sortHighLow;
+            document.getElementById('sort-opt-3').innerText = t.sortNew;
+            document.getElementById('sort-opt-4').innerText = t.sortEnding;
+
+            const csd = document.getElementById('current-sort-display');
+            if (currentSort === 'price_asc') csd.innerText = t.sortLowHigh;
+            else if (currentSort === 'price_desc') csd.innerText = t.sortHighLow;
+            else if (currentSort === 'new') csd.innerText = t.sortNew;
+            else if (currentSort === 'ending_soon') csd.innerText = t.sortEnding;
+            else csd.innerText = t.sortBest;
+
+            document.querySelectorAll('.lang-switch-container .sm-btn').forEach(btn => btn.classList.remove('active'));
+            if (btnElement) btnElement.classList.add('active');
+            else document.querySelector(`.lang-switch-container .sm-btn[data-lang="${lang}"]`).classList.add('active');
+
+            if(document.getElementById('main-view').style.display !== 'none' && (currentQuery || currentCategory)) {
+                fetchAuctions();
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.style.borderLeftColor = type === 'error' ? 'var(--danger-color)' : 'var(--accent-color)';
+            notif.innerHTML = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        function applyPriceFilter() {
+            activeMinPrice = minPriceInput.value;
+            activeMaxPrice = maxPriceInput.value;
+            isIncludeShippingActive = document.getElementById('includeShippingCheckbox').checked;
+
+            isPriceFilterActive = true;
+            showNotification(translations[currentLang].applyFilter + " ✓");
+
+            currentPage = 1;
+            fetchAuctions();
+        }
+
+        function filterByType(type, el) {
+            const isAlreadyActive = el.classList.contains('active');
+            document.querySelectorAll('.filter-item:not(#auction-tab-btn)').forEach(li => li.classList.remove('active'));
+
+            if (isAlreadyActive) {
+                currentCategory = '';
+                currentQuery = document.getElementById('searchInput').value.trim();
+                el.classList.remove('active');
+            } else {
+                el.classList.add('active');
+                currentCategory = type;
+                let inputVal = document.getElementById('searchInput').value.trim();
+                currentQuery = inputVal ? inputVal : (popularSearches[type] || type);
+            }
+            currentPage = 1;
+            fetchAuctions();
+        }
+
+        function toggleAuctions() {
+            isAuctionTabActive = document.getElementById('auction-tab-btn').checked;
+            const card = document.getElementById('auctionCard');
+            if(isAuctionTabActive) card.classList.add('active'); else card.classList.remove('active');
+
+            currentBuyingOptions = isAuctionTabActive ? 'AUCTION' : '';
+            currentPage = 1; fetchAuctions();
+        }
+
+        function triggerSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) {
+                currentQuery = query; currentPage = 1;
+                document.querySelectorAll('.filter-item').forEach(btn => btn.classList.remove('active'));
+                currentCategory = ''; fetchAuctions();
+            }
+        }
+
+        async function searchByImage() {
+            const file = document.getElementById('imageInput').files[0];
+            if (!file) return;
+            const formData = new FormData(); formData.append('image', file);
+            showNotification("Аналізуємо фото...", "info");
+            document.getElementById('auction-results').innerHTML = `<div style="grid-column: 1/-1; display: flex; justify-content: center; padding: 100px;"><div class="loader coil"><span></span><span></span><span></span><span></span></div></div>`;
+            document.getElementById('pagination-container').innerHTML = '';
+
+            try {
+                const response = await fetch('/api/search-by-image', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error("Не вдалося розпізнати фото");
+                const data = await response.json();
+                document.getElementById('searchInput').value = data.query;
+                currentQuery = data.query; currentPage = 1;
+                document.querySelectorAll('.filter-item').forEach(btn => btn.classList.remove('active'));
+                currentCategory = ''; fetchAuctions();
+            } catch (error) {
+                showNotification(error.message, "error");
+                document.getElementById('auction-results').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--danger-color); padding-top: 20px;">${error.message}</p>`;
+            }
+        }
+
+        function getApiSort(sortVal) {
+            if (sortVal === 'ending_soon') return 'endingSoonest';
+            if (sortVal === 'price_asc') return 'price';
+            if (sortVal === 'price_desc') return '-price';
+            if (sortVal === 'new') return 'newlyListed';
+            return sortVal;
+        }
+
+        function goToPage(page) { currentPage = page; fetchAuctions(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+
+        function renderPagination(total) {
+            const container = document.getElementById('pagination-container'); container.innerHTML = '';
+            const totalPages = Math.ceil(total / itemsPerPage);
+            if (totalPages <= 1) return;
+            let startPage = Math.max(1, currentPage - 2); let endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+            const addBtn = (text, page, disabled, active) => {
+                const btn = document.createElement('button'); btn.className = `page-btn ${active ? 'active' : ''}`; btn.innerText = text; btn.disabled = disabled;
+                if(!disabled && !active) btn.onclick = () => goToPage(page); container.appendChild(btn);
+            };
+
+            addBtn(translations[currentLang].btnPrev, currentPage - 1, currentPage === 1, false);
+            if (startPage > 1) { addBtn('1', 1); if (startPage > 2) { const span = document.createElement('span'); span.innerText = '...'; span.className='page-dots'; container.appendChild(span); } }
+            for (let i = startPage; i <= endPage; i++) addBtn(i, i, false, i === currentPage);
+            if (endPage < totalPages) { if (endPage < totalPages - 1) { const span = document.createElement('span'); span.innerText = '...'; span.className='page-dots'; container.appendChild(span); } addBtn(totalPages, totalPages); }
+            addBtn(translations[currentLang].btnNext, currentPage + 1, currentPage === totalPages, false);
+        }
+
+        async function fetchAuctions() {
+            const container = document.getElementById('auction-results');
+            container.innerHTML = `<div style="grid-column: 1/-1; display: flex; justify-content: center; padding: 100px;"><div class="loader coil"><span></span><span></span><span></span><span></span></div></div>`;
+
+            const doFrontendFilter = isPriceFilterActive && isIncludeShippingActive;
+            const apiOffset = doFrontendFilter ? 0 : (currentPage - 1) * itemsPerPage;
+            const apiLimit = doFrontendFilter ? 100 : itemsPerPage;
+
+            let qToSend = currentQuery;
+            if (!currentQuery && !currentCategory) qToSend = 'tech';
+
+            const params = new URLSearchParams({ offset: apiOffset, limit: apiLimit });
+            if (qToSend) params.append('q', qToSend);
+            if (currentSort) params.append('sort', getApiSort(currentSort));
+            if (isAuctionTabActive) params.append('buyingOptions', 'AUCTION');
+            else if (currentBuyingOptions) params.append('buyingOptions', currentBuyingOptions);
+            if (currentCategory) params.append('category', currentCategory);
+            if (userCountryCode) params.append('country', userCountryCode);
+
+            if (isPriceFilterActive && !isIncludeShippingActive) {
+                if (activeMinPrice) params.append('min_price', (parseFloat(activeMinPrice) / (exchangeRates[currentCurrency] || 1)).toFixed(0));
+                if (activeMaxPrice) params.append('max_price', (parseFloat(activeMaxPrice) / (exchangeRates[currentCurrency] || 1)).toFixed(0));
+            }
+
+            try {
+                const response = await fetch(`/api/auctions?${params.toString()}`);
+                if (!response.ok) throw new Error(`Error ${response.status}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                if (doFrontendFilter) {
+                    let items = data.itemSummaries || [];
+                    items = items.filter(item => {
+                        let price = item.currentBidPrice?.value || item.price?.value || 0;
+                        let shippingCost = null;
+                        if (item.shippingOptions && item.shippingOptions.length > 0 && item.shippingOptions[0].shippingCost?.value !== undefined) {
+                            shippingCost = parseFloat(item.shippingOptions[0].shippingCost.value);
+                        }
+                        let canShip = (shippingCost !== null);
+                        if (userCountryCode && item.shipToLocations?.regionExcluded) {
+                            const excluded = item.shipToLocations.regionExcluded.map(r => (r.regionName || r.regionId || '').toUpperCase());
+                            if (excluded.includes(String(userCountryCode).toUpperCase())) canShip = false;
+                        }
+                        if (!canShip) return false;
+
+                        let totalUSD = parseFloat(price) + shippingCost;
+                        let totalLocal = totalUSD * (exchangeRates[currentCurrency] || 1);
+                        if (activeMinPrice && totalLocal < parseFloat(activeMinPrice)) return false;
+                        if (activeMaxPrice && totalLocal > parseFloat(activeMaxPrice)) return false;
+                        return true;
+                    });
+
+                    if (currentSort === 'price_asc' || currentSort === 'price_desc') {
+                        items.sort((a, b) => {
+                            let pA = parseFloat(a.currentBidPrice?.value || a.price?.value || 0) + parseFloat(a.shippingOptions?.[0]?.shippingCost?.value || 0);
+                            let pB = parseFloat(b.currentBidPrice?.value || b.price?.value || 0) + parseFloat(b.shippingOptions?.[0]?.shippingCost?.value || 0);
+                            return currentSort === 'price_asc' ? pA - pB : pB - pA;
+                        });
+                    } else if (currentSort === 'ending_soon') {
+                        items.sort((a, b) => new Date(a.itemEndDate||'9999-12-31') - new Date(b.itemEndDate||'9999-12-31'));
+                    } else if (currentSort === 'new') {
+                        items.sort((a, b) => new Date(b.itemCreationDate||0) - new Date(a.itemCreationDate||0));
+                    }
+                    if (isAuctionTabActive) items = items.filter(i => i.buyingOptions && i.buyingOptions.includes('AUCTION'));
+
+                    const totalFound = items.length;
+                    const start = (currentPage - 1) * itemsPerPage;
+                    renderItems(items.slice(start, start + itemsPerPage), true);
+                    renderPagination(totalFound);
+                } else {
+                    renderItems(data.itemSummaries, false);
+                    renderPagination(data.total || 100);
+                }
+            } catch (error) {
+                let msg = error.message;
+                if (msg.includes('Failed to fetch')) msg = "Переконайтеся, що ваш Python сервер app.py запущено на порту 5000.";
+                container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--danger-color); padding-top: 20px;">System Error: ${msg}</p>`;
+                document.getElementById('pagination-container').innerHTML = '';
+            }
+        }
+
+        function formatTimeLeft(endDateString) {
+            const end = new Date(endDateString);
+            if (isNaN(end.getTime())) return {text: '', color: 'inherit'};
+            const diff = end - new Date();
+            if (diff <= 0) return {text: translations[currentLang].ended, color: 'var(--danger-color)'};
+
+            const d = Math.floor(diff / 86400000), h = Math.floor((diff % 86400000) / 3600000), m = Math.floor((diff % 3600000) / 60000);
+            let text = d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`;
+            let color = d < 1 ? 'var(--danger-color)' : 'var(--text-muted)';
+            return { text, color };
+        }
+
+        function getShippingHtml(item, basePrice, baseCurrency, elementId, isDetail = false) {
+            const t = translations[currentLang];
+            let shippingCost = null; let shipCurrency = baseCurrency;
+            if (item.shippingOptions && Array.isArray(item.shippingOptions) && item.shippingOptions.length > 0) {
+                const costObj = item.shippingOptions[0].shippingCost;
+                if (costObj && costObj.value !== undefined) { shippingCost = parseFloat(costObj.value); shipCurrency = costObj.currency || baseCurrency; }
+            }
+            let canShip = (shippingCost !== null);
+            if (userCountryCode && item.shipToLocations && item.shipToLocations.regionExcluded) {
+                const excluded = item.shipToLocations.regionExcluded.map(r => (r.regionName || r.regionId || '').toUpperCase());
+                if (excluded.includes(String(userCountryCode).toUpperCase())) canShip = false;
+            }
+            if (!canShip) shippingCost = null;
+
+            let html = ''; let totalVal = parseFloat(basePrice);
+            const shipId = isDetail ? 'detail-shipping-info' : `shipping-info-${elementId}`;
+            const totalId = isDetail ? 'detail-total-val' : `total-val-${elementId}`;
+            let locText = userCountryCode ? ` ${t.shippingTo} ${getCountryName(userCountryCode, currentLang)}` : '';
+
+            if (shippingCost === 0) {
+                html = `<div id="${shipId}" data-ship-val="0" style="color: var(--success-color); font-size: 0.85rem; margin-bottom: 5px;">✅${locText}: <b>${t.freeShipping}</b></div>
+                    <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px;">${t.totalPrice}: <span id="${totalId}" class="dynamic-price" data-original-price="${totalVal}" data-original-currency="${baseCurrency}">${convertPrice(totalVal, baseCurrency)}</span></div>`;
+            } else if (shippingCost > 0) {
+                totalVal += shippingCost;
+                html = `<div id="${shipId}" data-ship-val="${shippingCost}" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px;">🚚${locText}: <span class="dynamic-price" style="color: var(--text-main); font-weight: bold;" data-original-price="${shippingCost}" data-original-currency="${shipCurrency}">${convertPrice(shippingCost, shipCurrency)}</span></div>
+                    <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px;">${t.totalPrice}: <span id="${totalId}" class="dynamic-price" data-original-price="${totalVal}" data-original-currency="${baseCurrency}">${convertPrice(totalVal, baseCurrency)}</span></div>`;
+            } else {
+                html = `<div id="${shipId}" data-ship-val="NaN" style="color: var(--danger-color); font-size: 0.85rem; margin-bottom: 5px;">❌${locText} ${t.shippingUnknown}</div>
+                    <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px;">${t.totalPrice}: <span id="${totalId}" class="dynamic-price" data-original-price="${totalVal}" data-original-currency="${baseCurrency}">${convertPrice(totalVal, baseCurrency)}</span> <span style="font-size: 0.7em; color: var(--text-muted);">(без доставки)</span></div>`;
+            }
+            return html;
+        }
+
+        function updateTimers() {
+            document.querySelectorAll('.auction-info').forEach(el => {
+                const endDateString = el.getAttribute('data-end');
+                if (endDateString) { const timeData = formatTimeLeft(endDateString); el.innerText = timeData.text; el.style.color = timeData.color; }
+            });
+        }
+
+        function renderItems(items, isPreFiltered = false) {
+            const container = document.getElementById('auction-results'); const t = translations[currentLang]; container.innerHTML = '';
+            let itemsToRender = items || [];
+            if (!isPreFiltered) {
+                if (isAuctionTabActive && itemsToRender.length) itemsToRender = itemsToRender.filter(i => i.buyingOptions && i.buyingOptions.includes('AUCTION'));
+                if (currentSort === 'ending_soon') itemsToRender.sort((a, b) => new Date(a.itemEndDate||'9999-12-31') - new Date(b.itemEndDate||'9999-12-31'));
+                else if (currentSort === 'new') itemsToRender.sort((a, b) => new Date(b.itemCreationDate||0) - new Date(a.itemCreationDate||0));
+                else if (currentSort === 'price_asc') itemsToRender.sort((a, b) => (a.currentBidPrice?.value || a.price?.value || 999999) - (b.currentBidPrice?.value || b.price?.value || 999999));
+                else if (currentSort === 'price_desc') itemsToRender.sort((a, b) => (b.currentBidPrice?.value || b.price?.value || 0) - (a.currentBidPrice?.value || a.price?.value || 0));
+            }
+            if (!itemsToRender.length) { container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); font-size: 1.1rem; padding-top: 20px;">${t.noItems}</p>`; return; }
+
+            const heartSvg = `<svg class="heart-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+
+            itemsToRender.forEach(item => {
+                const imgUrl = item.image?.imageUrl || 'https://dummyimage.com/300x200/cccccc/000000&text=No+Img';
+                const price = item.currentBidPrice?.value || item.price?.value || '0.00';
+                const curr = item.currentBidPrice?.currency || item.price?.currency || 'USD';
+                const isAuct = item.buyingOptions?.includes('AUCTION');
+
+                let metaHtml = '';
+                if(isAuct) {
+                    const time = formatTimeLeft(item.itemEndDate);
+                    metaHtml = `<span class="bid-count" id="bids-${item.itemId}">${item.bidCount||0} ${t.bids}</span><span class="auction-info" data-end="${item.itemEndDate}" style="color: ${time.color};">${time.text}</span>`;
+                }
+                const shipTotalHtml = getShippingHtml(item, price, curr, item.itemId, false);
+
+                container.innerHTML += `<div class="item-card"><div class="card-img-wrap">${heartSvg}<img src="${imgUrl}" alt=""></div><h3 class="item-title">${item.title}</h3><p class="price" id="price-${item.itemId}" data-original-price="${price}" data-original-currency="${curr}" style="margin-bottom: 5px;">${convertPrice(price, curr)}</p>${shipTotalHtml}<div class="card-meta">${metaHtml}</div><button class="buy-btn ${isAuct?'highlight':''}" onclick="openItem('${item.itemId}')">${isAuct ? t.placeBid : t.viewItem}</button></div>`;
+            });
+        }
+
+        async function openItem(itemId) {
+            document.getElementById('main-view').style.display = 'none'; document.getElementById('detail-view').style.display = 'flex';
+            const container = document.getElementById('single-item-container'); const t = translations[currentLang];
+            container.setAttribute('data-current-id', itemId);
+            container.innerHTML = `<div class="loader coil" style="margin: 100px auto;"><span></span><span></span><span></span><span></span></div>`;
+
+            try {
+                const response = await fetch(`/api/item/${encodeURIComponent(itemId)}?country=${userCountryCode}`);
+                const item = await response.json();
+                const mainImgUrl = item.image?.imageUrl || '';
+                const allImages = [mainImgUrl, ...(item.additionalImages?.map(i => i.imageUrl) || [])].filter(Boolean);
+                const price = item.currentBidPrice?.value || item.price?.value || '0';
+                const curr = item.currentBidPrice?.currency || item.price?.currency || 'USD';
+                originalDescription = item.shortDescription || 'No description available.';
+                let thumbs = allImages.length > 1 ? `<div class="thumbnails-row">${allImages.map((img, i) => `<div class="thumbnail ${i===0?'active':''}" onclick="changeMainImage(this, '${img}')"><img src="${img}"></div>`).join('')}</div>` : '';
+                const shipTotalHtml = getShippingHtml(item, price, curr, itemId, true);
+
+                container.innerHTML = `<h2>${item.title}</h2><div class="detail-content"><div class="gallery-container"><div class="main-image-container" onclick="openLightbox('${mainImgUrl}')"><img id="main-product-image" src="${mainImgUrl}"></div>${thumbs}</div><div class="detail-info"><div class="timer-text" id="timer-text" style="color:var(--danger-color); margin-bottom:10px;"></div><p id="detail-price" data-original-price="${price}" data-original-currency="${curr}" style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">${convertPrice(price, curr)}</p>${shipTotalHtml}<div class="desc-box"><strong>${t.descTitle}</strong><br><br><span id="item-description">${originalDescription}</span></div><div style="display:flex; gap:10px; margin-top:20px;"><button class="page-btn" onclick="translateDesc('UK')">UA</button><button class="page-btn" onclick="translateDesc('ES')">ES</button></div><a href="${item.itemWebUrl||'#'}" target="_blank" class="buy-btn highlight" style="display:block; text-align:center; margin-top: 30px; padding:16px;">${t.openEbay}</a></div></div>`;
+
+                if (item.itemEndDate) {
+                    clearInterval(auctionTimerInterval);
+                    auctionTimerInterval = setInterval(() => {
+                        const remaining = new Date(item.itemEndDate) - new Date(); const txt = document.getElementById('timer-text');
+                        if(!txt) return;
+                        if (remaining <= 0) { txt.innerText = t.ended; clearInterval(auctionTimerInterval); }
+                        else {
+                            const d = Math.floor(remaining / 86400000), h = Math.floor((remaining % 86400000) / 3600000), m = Math.floor((remaining % 3600000) / 60000), s = Math.floor((remaining % 60000) / 1000);
+                            txt.innerText = `${d}d ${h}h ${m}m ${s}s left`;
+                        }
+                    }, 1000);
+                }
+            } catch (error) { container.innerHTML = `<p style="color:var(--danger-color);">Error: ${error.message}</p>`; }
+        }
+
+        function changeMainImage(thumb, url) { document.getElementById('main-product-image').src = url; document.querySelector('.main-image-container').setAttribute('onclick', `openLightbox('${url}')`); document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active')); thumb.classList.add('active'); }
+        function openLightbox(src) { document.getElementById('lightbox-img').src = src; document.getElementById('lightbox').classList.add('show'); }
+        function closeLightbox(e) { if (e && e.target !== e.currentTarget && e.target.tagName !== 'SPAN') return; document.getElementById('lightbox').classList.remove('show'); }
+        function zoomImage(e) { e.preventDefault(); const img = e.target; let s = parseFloat(img.style.transform.replace('scale(',''))||1; s = Math.min(Math.max(0.5, s + e.deltaY * -0.01), 4); img.style.transform = `scale(${s})`; }
+
+        async function translateDesc(lang) {
+            const el = document.getElementById('item-description'); el.style.opacity = '0.5';
+            try {
+                const res = await fetch('/api/translate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text: originalDescription, lang}) });
+                const data = await res.json(); if(data.translatedText) el.innerText = data.translatedText;
+            } catch(e){} finally { el.style.opacity = '1'; }
+        }
+
+        function goBack() { clearInterval(auctionTimerInterval); document.getElementById('detail-view').style.display = 'none'; document.getElementById('main-view').style.display = 'flex'; }
+
+        async function pollPrices() {
+            if (isPolling) return; isPolling = true;
+            try {
+                if (document.getElementById('main-view').style.display !== 'none') {
+                    const auctionBids = document.querySelectorAll('.bid-count[id^="bids-"]');
+                    for (let el of auctionBids) {
+                        if (document.getElementById('main-view').style.display === 'none') break;
+                        const itemId = el.id.substring(5);
+                        try {
+                            const res = await fetch(`/api/item/${encodeURIComponent(itemId)}?country=${userCountryCode}`);
+                            if (res.ok) {
+                                const item = await res.json();
+                                const p = item.currentBidPrice?.value || item.price?.value;
+                                const c = item.currentBidPrice?.currency || item.price?.currency;
+                                const pEl = document.getElementById(`price-${itemId}`);
+                                if(pEl && p !== null && p !== pEl.getAttribute('data-original-price')){
+                                    pEl.setAttribute('data-original-price', p); pEl.setAttribute('data-original-currency', c);
+                                    pEl.innerText = convertPrice(p, c); pEl.style.color = 'var(--success-color)'; setTimeout(()=>pEl.style.color='', 1500);
+                                    const totalValEl = document.getElementById(`total-val-${itemId}`); const shipInfoEl = document.getElementById(`shipping-info-${itemId}`);
+                                    if (totalValEl && shipInfoEl) {
+                                        const shipVal = parseFloat(shipInfoEl.getAttribute('data-ship-val'));
+                                        if (!isNaN(shipVal) && shipVal >= 0) { const newTotal = parseFloat(p) + shipVal; totalValEl.setAttribute('data-original-price', newTotal); totalValEl.innerText = convertPrice(newTotal, c); }
+                                    }
+                                }
+                                if(item.bidCount !== undefined) el.innerText = `${item.bidCount} ${translations[currentLang].bids}`;
+                            }
+                        } catch (e) {}
+                        await new Promise(r => setTimeout(r, 400));
+                    }
+                }
+            } finally { isPolling = false; }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            updateInputsFromSlider();
+            await initExchangeRates(); await initUserLocation();
+            let autoCurr = userCountryCode === 'UA' ? 'UAH' : (['AT','BE','CY','EE','FI','FR','DE','GR','IE','IT','LV','LT','LU','MT','NL','PT','SK','SI','ES'].includes(userCountryCode) ? 'EUR' : 'USD');
+            const btn = document.querySelector(`.currency-switch-container .sm-btn[data-currency="${autoCurr}"]`);
+            if (btn) changeCurrency(autoCurr, btn);
+            setSiteLanguage('uk', document.querySelector('.lang-btn[data-lang="uk"]'));
+
+            priceCheckInterval = setInterval(pollPrices, 5000); 
+            updateTimerInterval = setInterval(updateTimers, 1000);
+
+            fetchAuctions();
+        });
+
+        window.onload = () => document.getElementById('full-page-loader').classList.add('hidden');
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+.env
+.venv/
+venv/
+__pycache__/
+.idea/
+*.pyc
+get_token.py
