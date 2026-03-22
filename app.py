@@ -1,21 +1,4 @@
 import os
-import sys
-import subprocess
-
-# --- АВТОМАТИЧНЕ НАЛАШТУВАННЯ ---
-def setup_environment():
-    try:
-        import dotenv
-        import psutil
-    except ImportError:
-        print("⏳ Встановлюємо відсутні бібліотеки (dotenv, psutil)...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "python-dotenv", "psutil"])
-        print("✅ Бібліотеки успішно встановлено!")
-
-
-setup_environment()
-# --------------------------------
-
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import requests
@@ -305,14 +288,17 @@ def search_by_image():
     try:
         print("📸 Uploading image to Freeimage.host...")
         freeimage_url = "https://freeimage.host/api/1/upload"
+        file.seek(0)
         payload = {
             "key": FREEIMAGE_API_KEY,
             "action": "upload",
-            "source": base64.b64encode(file.read()).decode('utf-8'),
             "format": "json"
         }
+        files = {
+            "source": (file.filename, file.read(), file.mimetype)
+        }
 
-        upload_response = requests.post(freeimage_url, data=payload)
+        upload_response = requests.post(freeimage_url, data=payload, files=files)
 
         if upload_response.status_code != 200:
             return jsonify({'error': f'Failed to upload image: {upload_response.text}'}), 500

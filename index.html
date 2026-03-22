@@ -178,9 +178,14 @@
         .filter-item { display: flex; align-items: center; cursor: pointer; font-size: 0.95rem; color: var(--text-muted); user-select: none; transition: color 0.2s; }
         .filter-item:hover { color: var(--text-main); }
         .filter-item.active { color: var(--text-main); font-weight: 600; }
+
+        /* Звичайна галочка (чекбокс) */
         .checkbox { width: 18px; height: 18px; border: 2px solid var(--text-muted); border-radius: 4px; margin-right: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .filter-item.active .checkbox { background-color: var(--accent-color); border-color: var(--accent-color); }
         .filter-item.active .checkbox::after { content: '✓'; color: #fff; font-size: 12px; font-weight: bold; }
+
+        /* Спеціальний стиль для Обраного в сайдбарі */
+        .filter-item.fav-tab.active .checkbox { background-color: var(--danger-color); border-color: var(--danger-color); }
 
         /* --- БЛОК ЦІНИ --- */
         .filter-price-inputs-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
@@ -236,12 +241,16 @@
 
         /* --- AUCTION GRID & CARDS --- */
         .auction-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; align-content: start; }
-        .item-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; position: relative; box-shadow: var(--shadow); }
+        .item-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; position: relative; box-shadow: var(--shadow); cursor: pointer;}
         .item-card:hover { transform: translateY(-4px); border-color: var(--accent-color); }
         .card-img-wrap { width: 100%; height: 200px; background: transparent; margin-bottom: 16px; position: relative; display: flex; align-items: center; justify-content: center; }
         .card-img-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .heart-icon { position: absolute; top: 0px; right: 0px; color: #d1d1d6; cursor: pointer; transition: color 0.2s; }
-        .heart-icon:hover { color: var(--danger-color); }
+
+        /* СЕРДЕЧКО ОБРАНОГО */
+        .heart-icon { position: absolute; top: 0px; right: 0px; color: #d1d1d6; cursor: pointer; transition: all 0.2s; z-index: 10; fill: none; }
+        .heart-icon:hover { color: var(--danger-color); transform: scale(1.1); }
+        .heart-icon.active { fill: var(--danger-color); color: var(--danger-color); }
+
         .item-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; height: 42px; overflow: hidden; line-height: 1.4; color: var(--text-main); }
         .price { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px; }
         .card-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 16px; font-weight: 500; }
@@ -267,26 +276,39 @@
         .loader.coil span:nth-child(3){ inset: 20%; animation-delay: .2s; }
         @keyframes coil-spin { 0%,100%{ transform: rotate(0deg); } 50%{ transform: rotate(180deg); } }
 
-        /* --- DETAIL VIEW --- */
+        /* --- DETAIL VIEW & GALLERY --- */
         #detail-view { display: none; width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px;}
         .detail-content { display: flex; gap: 40px; margin-top: 20px; }
-        .gallery-container { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-        .main-image-container { width: 100%; height: 400px; background: var(--bg-card); border-radius: 16px; display: flex; align-items: center; justify-content: center; padding: 20px; cursor: zoom-in; box-shadow: var(--shadow); border: 1px solid var(--border-color);}
-        .main-image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .thumbnails-row { display: flex; gap: 10px; overflow-x: auto; }
-        .thumbnail { width: 70px; height: 70px; background: var(--bg-card); border-radius: 8px; padding: 5px; cursor: pointer; border: 2px solid transparent; }
+        .gallery-container { flex: 1; display: flex; flex-direction: column; gap: 15px; position: relative; min-width: 0; }
+        .main-image-container { width: 100%; height: 400px; background: var(--bg-card); border-radius: 16px; display: flex; align-items: center; justify-content: center; padding: 20px; cursor: zoom-in; box-shadow: var(--shadow); border: 1px solid var(--border-color); flex-shrink: 0;}
+        .main-image-container img { max-width: 100%; max-height: 100%; object-fit: contain; transition: opacity 0.15s ease-in-out; }
+
+        /* КАРУСЕЛЬ МІНІАТЮР */
+        .thumbnails-wrapper { position: relative; display: flex; align-items: center; width: 100%; gap: 8px; margin-top: 5px; }
+        .thumbnails-track-container { overflow: hidden; flex: 1; border-radius: 8px; }
+        .thumbnails-track { display: flex; gap: 10px; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); width: 100%; }
+        .thumbnail { flex: 0 0 calc(20% - 8px); height: 75px; background: var(--bg-card); border-radius: 8px; padding: 4px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s, transform 0.2s; box-sizing: border-box; }
+        .thumbnail:hover { transform: translateY(-2px); }
         .thumbnail.active { border-color: var(--accent-color); }
-        .thumbnail img { width: 100%; height: 100%; object-fit: contain; }
+        .thumbnail img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
+        .thumb-nav-btn { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; box-shadow: var(--shadow); }
+        .thumb-nav-btn:hover { background: var(--accent-color); border-color: var(--accent-color); color: #fff; transform: scale(1.1); }
+
         .detail-info { flex: 1; }
         .detail-info h2 { margin-bottom: 20px; font-size: 1.5rem; }
         .desc-box { background-color: var(--bg-card); padding: 20px; border-radius: 12px; margin-top: 20px; line-height: 1.6; color: var(--text-muted); border: 1px solid var(--border-color); box-shadow: var(--shadow);}
         .timer-text { font-size: 1.1rem; font-weight: bold; color: var(--danger-color); margin-bottom: 10px; }
 
-        /* Lightbox & Notification */
+        /* Lightbox (Повноекранний перегляд) */
         .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 3000; opacity: 0; visibility: hidden; transition: 0.3s; }
         .lightbox.show { opacity: 1; visibility: visible; }
-        .lightbox-content { max-width: 90vw; max-height: 90vh; border-radius: 8px; transition: transform 0.3s; }
-        .lightbox-close { position: absolute; top: 20px; right: 30px; font-size: 3rem; color: #fff; cursor: pointer; }
+        .lightbox-content { max-width: 80vw; max-height: 80vh; border-radius: 8px; transition: opacity 0.2s ease-in-out, transform 0.3s; opacity: 1; object-fit: contain; }
+        .lightbox-close { position: absolute; top: 20px; right: 30px; font-size: 3rem; color: #fff; cursor: pointer; z-index: 3002; }
+        .lightbox-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; border: 1px solid rgba(255,255,255,0.2); width: 60px; height: 60px; border-radius: 50%; cursor: pointer; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; z-index: 3001; backdrop-filter: blur(5px); }
+        .lightbox-nav-btn:hover { background: var(--accent-color); transform: translateY(-50%) scale(1.1); border-color: transparent; }
+        .lightbox-nav-btn.left { left: 40px; }
+        .lightbox-nav-btn.right { right: 40px; }
+
         .notification { position: fixed; top: 90px; right: 20px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); padding: 16px 24px; border-radius: 12px; border-left: 4px solid var(--accent-color); z-index: 2000; animation: slideIn 0.4s; }
         @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
 
@@ -299,12 +321,16 @@
             .filter-item { background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 20px; white-space: nowrap; box-shadow: var(--shadow); }
             .filter-item .checkbox { display: none; }
             .filter-item.active { background-color: var(--text-main); color: var(--bg-main); border-color: var(--text-main); }
+            .thumbnail { flex: 0 0 calc(33.333% - 7px); } /* 3 мініатюри на мобільному */
         }
         @media (max-width: 768px) {
             .app-header { padding: 15px 20px; flex-direction: column; gap: 15px; align-items: stretch; }
             .header-controls { width: 100%; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; }
             .theme-switch-wrapper { margin-left: auto; }
             .detail-content { flex-direction: column; }
+            .lightbox-nav-btn { width: 45px; height: 45px; font-size: 1.2rem; }
+            .lightbox-nav-btn.left { left: 10px; }
+            .lightbox-nav-btn.right { right: 10px; }
         }
     </style>
 </head>
@@ -395,6 +421,11 @@
                     <li class="filter-item" onclick="filterByType('drones', this)"><div class="checkbox"></div> <span id="f-drone">Дрони</span></li>
                     <li class="filter-item" onclick="filterByType('retro gaming', this)"><div class="checkbox"></div> <span id="f-retro">Ретро ігри</span></li>
                     <li class="filter-item" onclick="filterByType('3d printing', this)"><div class="checkbox"></div> <span id="f-3d">3D Друк</span></li>
+
+                    <li class="filter-item fav-tab" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;" onclick="showFavorites(this)">
+                        <div class="checkbox" style="border-color: var(--danger-color);"></div>
+                        <span id="f-favs" style="color: var(--danger-color); font-weight: 600;">❤️ Обране</span>
+                    </li>
                 </ul>
             </div>
 
@@ -454,9 +485,11 @@
         </div>
     </div>
 
-    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
         <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+        <button class="lightbox-nav-btn left" onclick="changeLightboxImage(-1, event)">&#10094;</button>
         <img class="lightbox-content" id="lightbox-img" onwheel="zoomImage(event)">
+        <button class="lightbox-nav-btn right" onclick="changeLightboxImage(1, event)">&#10095;</button>
     </div>
 
     <script>
@@ -482,6 +515,14 @@
         let isIncludeShippingActive = false;
         let activeMinPrice = '';
         let activeMaxPrice = '';
+
+        /* --- ГЛОБАЛЬНІ ЗМІННІ ДЛЯ ГАЛЕРЕЇ ТА ОБРАНОГО --- */
+        let currentGalleryImages = [];
+        let currentMainImageIndex = 0;
+        let thumbSliderIndex = 0;
+
+        let favoriteItems = JSON.parse(localStorage.getItem('savedAuctions')) || [];
+        let currentFetchedItems = [];
 
         let minPriceInput = document.getElementById('minPriceInput');
         let maxPriceInput = document.getElementById('maxPriceInput');
@@ -537,6 +578,8 @@
                 fPhone: "Смартфони", fLaptop: "Ноутбуки", fConsole: "Консолі", fTv: "Телевізори",
                 fCamera: "Камери", fWatch: "Годинники", fAudio: "Навушники", fSim: "Сімрейсинг",
                 fPc: "ПК Компоненти", fDrone: "Дрони", fRetro: "Ретро ігри", f3d: "3D Друк",
+                fFavs: "❤️ Обране",
+                addedFav: "Додано до обраного ❤️", removedFav: "Видалено з обраного",
                 btnPrev: "← Назад", btnNext: "Далі →", btnBack: "← Назад",
                 noItems: "Нічого не знайдено за цим запитом.", viewItem: "ПЕРЕГЛЯНУТИ", placeBid: "ЗРОБИТИ СТАВКУ",
                 condition: "Стан", descTitle: "Опис", openEbay: "Відкрити на eBay", ended: "Завершено",
@@ -553,6 +596,8 @@
                 fPhone: "Smartphones", fLaptop: "Laptops", fConsole: "Consoles", fTv: "TVs",
                 fCamera: "Cameras", fWatch: "Watches", fAudio: "Headphones", fSim: "Sim Racing",
                 fPc: "PC Parts", fDrone: "Drones", fRetro: "Retro Gaming", f3d: "3D Printing",
+                fFavs: "❤️ Favorites",
+                addedFav: "Added to favorites ❤️", removedFav: "Removed from favorites",
                 btnPrev: "← Prev", btnNext: "Next →", btnBack: "← Back",
                 noItems: "No items found for this query.", viewItem: "VIEW", placeBid: "PLACE BID",
                 condition: "Condition", descTitle: "Description", openEbay: "Open on eBay", ended: "Ended",
@@ -569,6 +614,8 @@
                 fPhone: "Teléfonos", fLaptop: "Portátiles", fConsole: "Consolas", fTv: "Televisores",
                 fCamera: "Cámaras", fWatch: "Relojes", fAudio: "Auriculares", fSim: "Sim Racing",
                 fPc: "PC Componentes", fDrone: "Drones", fRetro: "Juegos Retro", f3d: "Impresión 3D",
+                fFavs: "❤️ Favoritos",
+                addedFav: "Añadido a favoritos ❤️", removedFav: "Eliminado de favoritos",
                 btnPrev: "← Ant", btnNext: "Sig →", btnBack: "← Volver",
                 noItems: "No se encontraron artículos.", viewItem: "VER", placeBid: "PUJAR",
                 condition: "Condición", descTitle: "Descripción", openEbay: "Abrir en eBay", ended: "Finalizado",
@@ -720,6 +767,9 @@
             document.getElementById('f-retro').innerText = t.fRetro;
             document.getElementById('f-3d').innerText = t.f3d;
 
+            const favTab = document.getElementById('f-favs');
+            if (favTab) favTab.innerText = t.fFavs;
+
             document.getElementById('filter-title').innerText = t.filterTitle;
             document.getElementById('btn-apply-price').innerText = t.applyFilter;
 
@@ -746,7 +796,8 @@
             else document.querySelector(`.lang-switch-container .sm-btn[data-lang="${lang}"]`).classList.add('active');
 
             if(document.getElementById('main-view').style.display !== 'none' && (currentQuery || currentCategory)) {
-                fetchAuctions();
+                if (currentCategory === 'favorites') renderItems(favoriteItems, true);
+                else fetchAuctions();
             }
         }
 
@@ -759,6 +810,56 @@
             setTimeout(() => notif.remove(), 3000);
         }
 
+        /* --- ЛОГІКА ДЛЯ ОБРАНОГО --- */
+        function toggleFavorite(event, itemId) {
+            event.stopPropagation();
+            const heart = event.currentTarget;
+            const isFav = favoriteItems.some(item => item.itemId === itemId);
+            const t = translations[currentLang];
+
+            if (isFav) {
+                favoriteItems = favoriteItems.filter(item => item.itemId !== itemId);
+                heart.classList.remove('active');
+                showNotification(t.removedFav, "info");
+
+                if (currentCategory === 'favorites') {
+                    renderItems(favoriteItems, true);
+                }
+            } else {
+                const itemToAdd = currentFetchedItems.find(item => item.itemId === itemId) || favoriteItems.find(item => item.itemId === itemId);
+                if (itemToAdd) {
+                    favoriteItems.push(itemToAdd);
+                    heart.classList.add('active');
+                    showNotification(t.addedFav, "info");
+                }
+            }
+            localStorage.setItem('savedAuctions', JSON.stringify(favoriteItems));
+        }
+
+        function showFavorites(el) {
+            const isAlreadyActive = el.classList.contains('active');
+
+            document.querySelectorAll('.filter-item:not(#auction-tab-btn)').forEach(li => li.classList.remove('active'));
+
+            if (isAlreadyActive) {
+                // ВИМИКАЄМО вкладку
+                el.classList.remove('active');
+                currentCategory = '';
+                currentQuery = document.getElementById('searchInput').value.trim() || 'tech';
+                currentPage = 1;
+                fetchAuctions();
+            } else {
+                // ВМИКАЄМО вкладку
+                el.classList.add('active');
+                currentCategory = 'favorites';
+                currentQuery = '';
+                document.getElementById('searchInput').value = '';
+                document.getElementById('pagination-container').innerHTML = '';
+
+                renderItems(favoriteItems, true);
+            }
+        }
+
         function applyPriceFilter() {
             activeMinPrice = minPriceInput.value;
             activeMaxPrice = maxPriceInput.value;
@@ -767,8 +868,13 @@
             isPriceFilterActive = true;
             showNotification(translations[currentLang].applyFilter + " ✓");
 
-            currentPage = 1;
-            fetchAuctions();
+            if(currentCategory !== 'favorites') {
+                currentPage = 1;
+                fetchAuctions();
+            } else {
+                // Локальна фільтрація для обраного
+                renderItems(favoriteItems, true);
+            }
         }
 
         function filterByType(type, el) {
@@ -795,7 +901,11 @@
             if(isAuctionTabActive) card.classList.add('active'); else card.classList.remove('active');
 
             currentBuyingOptions = isAuctionTabActive ? 'AUCTION' : '';
-            currentPage = 1; fetchAuctions();
+            if(currentCategory !== 'favorites') {
+                currentPage = 1; fetchAuctions();
+            } else {
+                renderItems(favoriteItems, true);
+            }
         }
 
         function triggerSearch() {
@@ -808,9 +918,11 @@
         }
 
         async function searchByImage() {
-            const file = document.getElementById('imageInput').files[0];
+            const fileInput = document.getElementById('imageInput');
+            const file = fileInput.files[0];
             if (!file) return;
             const formData = new FormData(); formData.append('image', file);
+            fileInput.value = '';
             showNotification("Аналізуємо фото...", "info");
             document.getElementById('auction-results').innerHTML = `<div style="grid-column: 1/-1; display: flex; justify-content: center; padding: 100px;"><div class="loader coil"><span></span><span></span><span></span><span></span></div></div>`;
             document.getElementById('pagination-container').innerHTML = '';
@@ -993,6 +1105,7 @@
 
         function renderItems(items, isPreFiltered = false) {
             const container = document.getElementById('auction-results'); const t = translations[currentLang]; container.innerHTML = '';
+
             let itemsToRender = items || [];
             if (!isPreFiltered) {
                 if (isAuctionTabActive && itemsToRender.length) itemsToRender = itemsToRender.filter(i => i.buyingOptions && i.buyingOptions.includes('AUCTION'));
@@ -1001,9 +1114,10 @@
                 else if (currentSort === 'price_asc') itemsToRender.sort((a, b) => (a.currentBidPrice?.value || a.price?.value || 999999) - (b.currentBidPrice?.value || b.price?.value || 999999));
                 else if (currentSort === 'price_desc') itemsToRender.sort((a, b) => (b.currentBidPrice?.value || b.price?.value || 0) - (a.currentBidPrice?.value || a.price?.value || 0));
             }
-            if (!itemsToRender.length) { container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); font-size: 1.1rem; padding-top: 20px;">${t.noItems}</p>`; return; }
 
-            const heartSvg = `<svg class="heart-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+            currentFetchedItems = itemsToRender;
+
+            if (!itemsToRender.length) { container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); font-size: 1.1rem; padding-top: 20px;">${t.noItems}</p>`; return; }
 
             itemsToRender.forEach(item => {
                 const imgUrl = item.image?.imageUrl || 'https://dummyimage.com/300x200/cccccc/000000&text=No+Img';
@@ -1018,8 +1132,100 @@
                 }
                 const shipTotalHtml = getShippingHtml(item, price, curr, item.itemId, false);
 
-                container.innerHTML += `<div class="item-card"><div class="card-img-wrap">${heartSvg}<img src="${imgUrl}" alt=""></div><h3 class="item-title">${item.title}</h3><p class="price" id="price-${item.itemId}" data-original-price="${price}" data-original-currency="${curr}" style="margin-bottom: 5px;">${convertPrice(price, curr)}</p>${shipTotalHtml}<div class="card-meta">${metaHtml}</div><button class="buy-btn ${isAuct?'highlight':''}" onclick="openItem('${item.itemId}')">${isAuct ? t.placeBid : t.viewItem}</button></div>`;
+                const isFav = favoriteItems.some(fav => fav.itemId === item.itemId);
+                const heartSvg = `<svg class="heart-icon ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${item.itemId}')" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+
+                container.innerHTML += `<div class="item-card" onclick="openItem('${item.itemId}')"><div class="card-img-wrap">${heartSvg}<img src="${imgUrl}" alt=""></div><h3 class="item-title">${item.title}</h3><p class="price" id="price-${item.itemId}" data-original-price="${price}" data-original-currency="${curr}" style="margin-bottom: 5px;">${convertPrice(price, curr)}</p>${shipTotalHtml}<div class="card-meta">${metaHtml}</div><button class="buy-btn ${isAuct?'highlight':''}" onclick="event.stopPropagation(); openItem('${item.itemId}')">${isAuct ? t.placeBid : t.viewItem}</button></div>`;
             });
+        }
+
+        /* --- НОВІ ФУНКЦІЇ ДЛЯ СЛАЙДЕРА ФОТО --- */
+        function slideThumbs(dir) {
+            const track = document.getElementById('thumbnails-track');
+            if (!track) return;
+            const total = currentGalleryImages.length;
+            const maxIndex = Math.max(0, total - 5);
+
+            thumbSliderIndex += dir;
+            if (thumbSliderIndex < 0) thumbSliderIndex = 0;
+            if (thumbSliderIndex > maxIndex) thumbSliderIndex = maxIndex;
+
+            const thumbWidth = track.children[0].offsetWidth;
+            const gap = 10;
+            track.style.transform = `translateX(-${thumbSliderIndex * (thumbWidth + gap)}px)`;
+        }
+
+        function syncThumbnailHighlight(index) {
+            const track = document.getElementById('thumbnails-track');
+            if (!track) return;
+
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            if (track.children[index]) track.children[index].classList.add('active');
+
+            if (currentGalleryImages.length > 5) {
+                if (index < thumbSliderIndex) {
+                    thumbSliderIndex = index;
+                } else if (index >= thumbSliderIndex + 5) {
+                    thumbSliderIndex = index - 4;
+                }
+                const thumbWidth = track.children[0].offsetWidth;
+                track.style.transform = `translateX(-${thumbSliderIndex * (thumbWidth + 10)}px)`;
+            }
+
+            const mainImg = document.getElementById('main-product-image');
+            if (mainImg) mainImg.src = currentGalleryImages[index];
+        }
+
+        function changeMainImage(thumb, url, index) {
+            currentMainImageIndex = index;
+            const mainImg = document.getElementById('main-product-image');
+
+            mainImg.style.opacity = 0;
+            setTimeout(() => {
+                mainImg.src = url;
+                mainImg.style.opacity = 1;
+            }, 150);
+
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+        }
+
+        function openLightbox(index = currentMainImageIndex) {
+            currentMainImageIndex = index;
+            const img = document.getElementById('lightbox-img');
+            img.src = currentGalleryImages[index];
+            img.style.transform = 'scale(1)';
+            document.getElementById('lightbox').classList.add('show');
+        }
+
+        function closeLightbox(e) {
+            if (e && e.target !== e.currentTarget && e.target.tagName !== 'SPAN') return;
+            document.getElementById('lightbox').classList.remove('show');
+        }
+
+        function changeLightboxImage(dir, e) {
+            if(e) e.stopPropagation();
+            currentMainImageIndex += dir;
+
+            if (currentMainImageIndex < 0) currentMainImageIndex = currentGalleryImages.length - 1;
+            if (currentMainImageIndex >= currentGalleryImages.length) currentMainImageIndex = 0;
+
+            const img = document.getElementById('lightbox-img');
+            img.style.opacity = 0;
+            setTimeout(() => {
+                img.src = currentGalleryImages[currentMainImageIndex];
+                img.style.transform = 'scale(1)';
+                img.style.opacity = 1;
+                syncThumbnailHighlight(currentMainImageIndex);
+            }, 150);
+        }
+
+        function zoomImage(e) {
+            e.preventDefault();
+            const img = e.target;
+            let s = parseFloat(img.style.transform.replace('scale(',''))||1;
+            s = Math.min(Math.max(0.5, s + e.deltaY * -0.01), 4);
+            img.style.transform = `scale(${s})`;
         }
 
         async function openItem(itemId) {
@@ -1031,15 +1237,34 @@
             try {
                 const response = await fetch(`/api/item/${encodeURIComponent(itemId)}?country=${userCountryCode}`);
                 const item = await response.json();
+
                 const mainImgUrl = item.image?.imageUrl || '';
                 const allImages = [mainImgUrl, ...(item.additionalImages?.map(i => i.imageUrl) || [])].filter(Boolean);
+
+                currentGalleryImages = allImages;
+                currentMainImageIndex = 0;
+                thumbSliderIndex = 0;
+
                 const price = item.currentBidPrice?.value || item.price?.value || '0';
                 const curr = item.currentBidPrice?.currency || item.price?.currency || 'USD';
                 originalDescription = item.shortDescription || 'No description available.';
-                let thumbs = allImages.length > 1 ? `<div class="thumbnails-row">${allImages.map((img, i) => `<div class="thumbnail ${i===0?'active':''}" onclick="changeMainImage(this, '${img}')"><img src="${img}"></div>`).join('')}</div>` : '';
+
+                let thumbsHtml = '';
+                if (allImages.length > 1) {
+                    let trackHtml = allImages.map((img, i) => `<div class="thumbnail ${i===0?'active':''}" onclick="changeMainImage(this, '${img}', ${i})"><img src="${img}"></div>`).join('');
+
+                    let navBtns = allImages.length > 5 ? `
+                        <button class="thumb-nav-btn left" onclick="slideThumbs(-1)">&#10094;</button>
+                        <div class="thumbnails-track-container"><div class="thumbnails-track" id="thumbnails-track">${trackHtml}</div></div>
+                        <button class="thumb-nav-btn right" onclick="slideThumbs(1)">&#10095;</button>
+                    ` : `<div class="thumbnails-track-container"><div class="thumbnails-track" id="thumbnails-track">${trackHtml}</div></div>`;
+
+                    thumbsHtml = `<div class="thumbnails-wrapper">${navBtns}</div>`;
+                }
+
                 const shipTotalHtml = getShippingHtml(item, price, curr, itemId, true);
 
-                container.innerHTML = `<h2>${item.title}</h2><div class="detail-content"><div class="gallery-container"><div class="main-image-container" onclick="openLightbox('${mainImgUrl}')"><img id="main-product-image" src="${mainImgUrl}"></div>${thumbs}</div><div class="detail-info"><div class="timer-text" id="timer-text" style="color:var(--danger-color); margin-bottom:10px;"></div><p id="detail-price" data-original-price="${price}" data-original-currency="${curr}" style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">${convertPrice(price, curr)}</p>${shipTotalHtml}<div class="desc-box"><strong>${t.descTitle}</strong><br><br><span id="item-description">${originalDescription}</span></div><div style="display:flex; gap:10px; margin-top:20px;"><button class="page-btn" onclick="translateDesc('UK')">UA</button><button class="page-btn" onclick="translateDesc('ES')">ES</button></div><a href="${item.itemWebUrl||'#'}" target="_blank" class="buy-btn highlight" style="display:block; text-align:center; margin-top: 30px; padding:16px;">${t.openEbay}</a></div></div>`;
+                container.innerHTML = `<h2>${item.title}</h2><div class="detail-content"><div class="gallery-container"><div class="main-image-container" onclick="openLightbox(currentMainImageIndex)"><img id="main-product-image" src="${mainImgUrl}"></div>${thumbsHtml}</div><div class="detail-info"><div class="timer-text" id="timer-text" style="color:var(--danger-color); margin-bottom:10px;"></div><p id="detail-price" data-original-price="${price}" data-original-currency="${curr}" style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">${convertPrice(price, curr)}</p>${shipTotalHtml}<div class="desc-box"><strong>${t.descTitle}</strong><br><br><span id="item-description">${originalDescription}</span></div><div style="display:flex; gap:10px; margin-top:20px;"><button class="page-btn" onclick="translateDesc('UK')">UA</button><button class="page-btn" onclick="translateDesc('EN')">EN</button><button class="page-btn" onclick="translateDesc('ES')">ES</button></div><a href="${item.itemWebUrl||'#'}" target="_blank" class="buy-btn highlight" style="display:block; text-align:center; margin-top: 30px; padding:16px;">${t.openEbay}</a></div></div>`;
 
                 if (item.itemEndDate) {
                     clearInterval(auctionTimerInterval);
@@ -1055,11 +1280,6 @@
                 }
             } catch (error) { container.innerHTML = `<p style="color:var(--danger-color);">Error: ${error.message}</p>`; }
         }
-
-        function changeMainImage(thumb, url) { document.getElementById('main-product-image').src = url; document.querySelector('.main-image-container').setAttribute('onclick', `openLightbox('${url}')`); document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active')); thumb.classList.add('active'); }
-        function openLightbox(src) { document.getElementById('lightbox-img').src = src; document.getElementById('lightbox').classList.add('show'); }
-        function closeLightbox(e) { if (e && e.target !== e.currentTarget && e.target.tagName !== 'SPAN') return; document.getElementById('lightbox').classList.remove('show'); }
-        function zoomImage(e) { e.preventDefault(); const img = e.target; let s = parseFloat(img.style.transform.replace('scale(',''))||1; s = Math.min(Math.max(0.5, s + e.deltaY * -0.01), 4); img.style.transform = `scale(${s})`; }
 
         async function translateDesc(lang) {
             const el = document.getElementById('item-description'); el.style.opacity = '0.5';
