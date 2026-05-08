@@ -5,3 +5,5 @@ google-search-results
 gunicorn
 python-dotenv
 psutil
+flask-sqlalchemy
+flask-login

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>System Auction</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             /* Темна тема */
@@ -22,8 +23,8 @@
             --danger-color: #ff453a;
 
             --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            /* Швидкість анімації */
-            --anim-speed: 0.5s;
+            /* Швидкість анімації - оптимізовано для FPS */
+            --anim-speed: 0.25s;
 
             /* Координати кліку для кола */
             --circle-x: 90vw;
@@ -78,14 +79,26 @@
             transform: translate(calc(var(--circle-x) - 50px), calc(var(--circle-y) - 50px)) scale(45);
         }
 
-        /* Анімація кольорів для всіх карток та кнопок */
+        /* Анімація кольорів для всіх карток та кнопок - прибрано box-shadow для FPS */
         .app-header, .item-card, .search-input, .sort-btn, .sort-menu, .page-btn, .apply-btn, .sm-btn, .icon-btn, .search-btn, .app-sidebar, .thumbnail, .desc-box, .price-input-box {
-            transition: background-color var(--anim-speed) ease, border-color var(--anim-speed) ease, color var(--anim-speed) ease, box-shadow var(--anim-speed) ease;
+            transition: background-color var(--anim-speed) ease, border-color var(--anim-speed) ease, color var(--anim-speed) ease;
         }
 
         /* Швидка реакція на наведення */
         .sm-btn:hover, .page-btn:hover, .search-btn:hover, .icon-btn:hover, .sort-btn:hover, .item-card:hover, .thumbnail:hover, .auction-toggle-card:hover {
             transition-duration: 0.15s !important;
+        }
+
+        /* ОПТИМІЗАЦІЯ ДЛЯ МОБІЛЬНИХ (ПЛАВНІСТЬ БЕЗ ЛАГІВ) */
+        @media (max-width: 768px) {
+            .app-header, .item-card, .search-input, .sort-btn, .sort-menu, .page-btn, .apply-btn, .sm-btn, .icon-btn, .search-btn, .app-sidebar, .thumbnail, .desc-box, .price-input-box, body {
+                /* Замість повного вимкнення робимо дуже легкий перехід тільки для кольору та фону */
+                transition: background-color 0.3s ease, color 0.3s ease !important; 
+            }
+            .theme-overlay {
+                /* Повертаємо плавність колу */
+                transition: transform 0.65s cubic-bezier(0.19, 1, 0.22, 1);
+            }
         }
 
         /* УТИЛІТИ ДЛЯ МОБІЛЬНОЇ ВЕРСІЇ */
@@ -359,15 +372,16 @@
                 flex: 1; padding: 12px 0; font-size: 1rem; border-radius: 12px; text-align: center; margin: 0;
             }
 
-            /* Плаваюча кнопка Фільтрів (FAB) */
+            /* Плаваюча кнопка Фільтрів (FAB) - ЗМІЩЕНО ВБІК ДЛЯ ЗРУЧНОСТІ */
             .fab-filters {
-                position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+                position: fixed; bottom: 25px; right: 25px;
                 background: var(--accent-color); color: #fff; border: none;
-                padding: 14px 28px; border-radius: 30px; font-weight: 600; font-size: 1rem;
-                box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4); z-index: 1000;
-                align-items: center; gap: 8px; cursor: pointer; display: flex;
+                padding: 12px 20px; border-radius: 16px; font-weight: 700; font-size: 0.95rem;
+                box-shadow: 0 8px 25px rgba(126, 34, 206, 0.4); z-index: 1000;
+                align-items: center; gap: 10px; cursor: pointer; display: flex;
+                transition: transform 0.2s, opacity 0.2s;
             }
-
+            .fab-filters:active { transform: scale(0.95); }
             .auction-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
             .item-card { padding: 12px; }
             .card-img-wrap { height: 140px; }
@@ -378,6 +392,55 @@
 
             .filter-item { padding: 8px 0; margin-bottom: 5px; }
             .auction-toggle-card { padding: 18px 16px; margin-bottom: 10px; }
+        }
+
+        /* --- AUTH MODAL --- */
+        .auth-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 5000; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
+        .auth-modal.show { display: flex; opacity: 1; }
+        .auth-card { background: var(--bg-card); width: 100%; max-width: 400px; padding: 32px; border-radius: 24px; border: 1px solid var(--border-color); box-shadow: var(--shadow); transform: translateY(20px); transition: transform 0.3s ease; }
+        .auth-modal.show .auth-card { transform: translateY(0); }
+        .auth-tabs { display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .auth-tab { background: none; border: none; color: var(--text-muted); font-weight: 700; cursor: pointer; padding: 8px 16px; border-radius: 12px; transition: all 0.2s; font-size: 1.1rem; }
+        .auth-tab.active { color: var(--accent-color); background: var(--bg-input); }
+        .auth-form { display: flex; flex-direction: column; gap: 16px; }
+        .auth-input-group { display: flex; flex-direction: column; gap: 8px; }
+        .auth-input-group label { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
+        .auth-input { background: var(--bg-input); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 1rem; transition: border-color 0.2s; }
+        .auth-input:focus { border-color: var(--accent-color); }
+        .auth-submit { background: var(--accent-color); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: transform 0.1s; }
+        .auth-submit:active { transform: scale(0.98); }
+        .auth-error { color: var(--danger-color); font-size: 0.85rem; text-align: center; display: none; }
+        
+        .user-btn { display: flex; align-items: center; gap: 8px; background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; color: var(--text-main); cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .user-btn:hover { border-color: var(--accent-color); }
+        .user-btn i { font-size: 1.1rem; }
+        
+        /* --- AVATAR SELECTOR --- */
+        .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+        
+        /* Юзеровський блок адаптація */
+        @media (max-width: 600px) {
+            .profile-header { flex-direction: column; align-items: flex-start !important; gap: 15px !important; }
+            .profile-info-content { width: 100%; }
+            #profile-username { font-size: 1.4rem !important; }
+            #admin-badge { font-size: 0.65rem !important; padding: 3px 8px !important; }
+            #profile-role-text { font-size: 0.85rem !important; }
+        }
+        .avatar-item { 
+            width: 50px; height: 50px; background: var(--bg-input); border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; 
+            border: 2px solid transparent; transition: all 0.2s; color: var(--text-muted);
+        }
+        .avatar-item:hover { border-color: var(--accent-color); color: var(--accent-color); transform: translateY(-3px); }
+        .avatar-item.active { border-color: var(--accent-color); background: var(--bg-hover); color: var(--accent-color); }
+        .avatar-preview-btn { 
+            position: relative; cursor: pointer; transition: transform 0.2s; 
+        }
+        .avatar-preview-btn:hover { transform: scale(1.05); }
+        .avatar-edit-badge {
+            position: absolute; bottom: 0; right: 0; background: var(--accent-color);
+            width: 24px; height: 24px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; border: 2px solid var(--bg-card);
         }
 
         @media (max-width: 400px) {
@@ -407,6 +470,13 @@
                 <button class="sm-btn active" data-currency="USD" onclick="changeCurrency('USD')">$ USD</button>
                 <button class="sm-btn" data-currency="EUR" onclick="changeCurrency('EUR')">€ EUR</button>
                 <button class="sm-btn" data-currency="UAH" onclick="changeCurrency('UAH')">₴ UAH</button>
+            </div>
+
+            <div id="user-section">
+                <button class="user-btn" onclick="toggleUserPage()">
+                    <i data-lucide="user"></i>
+                    <span id="user-display-name">Увійти</span>
+                </button>
             </div>
 
             <div class="theme-switch-wrapper">
@@ -566,9 +636,80 @@
         </main>
     </div>
 
+    <!-- PROFILE VIEW -->
+    <div class="app-layout" id="profile-view" style="display: none;">
+        <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <button class="page-btn" onclick="goBack()" style="margin-bottom: 30px;">
+                <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+                <span id="btn-back-profile">Назад</span>
+            </button>
+            
+            <div class="auth-card" style="max-width: 100%; border: 1px solid var(--border-color); background: var(--bg-card);">
+                <div class="profile-header" style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+                    <div class="avatar-preview-btn" onclick="toggleAvatarSelector()">
+                        <div style="width: 80px; height: 80px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                            <i id="profile-avatar-icon" data-lucide="user" style="width: 40px; height: 40px;"></i>
+                        </div>
+                        <div class="avatar-edit-badge"><i data-lucide="edit-3" style="width: 12px; height: 12px; color: white;"></i></div>
+                    </div>
+                    <div class="profile-info-content">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <h2 id="profile-username" style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin: 0;">Користувач</h2>
+                            <span id="admin-badge" style="display: none; background: linear-gradient(45deg, #f59e0b, #fbbf24); color: #000; padding: 4px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Головний Адмін</span>
+                        </div>
+                        <p id="profile-role-text" style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Учасник системи Auction</p>
+                    </div>
+                </div>
+
+                <!-- AVATAR SELECTOR (Hidden by default) -->
+                <div id="avatar-selector" style="display: none; margin-bottom: 30px; padding: 20px; background: var(--bg-input); border-radius: 20px; border: 1px dashed var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="font-size: 0.9rem; color: var(--text-muted);">Оберіть іконку або завантажте фото:</h4>
+                        <button class="user-btn" onclick="document.getElementById('avatar-upload-input').click()" style="padding: 6px 12px; font-size: 0.8rem; background: var(--accent-color); color: white; border: none;">
+                            <i data-lucide="upload" style="width: 14px; height: 14px;"></i>
+                            Завантажити
+                        </button>
+                        <input type="file" id="avatar-upload-input" style="display: none;" accept="image/*" onchange="handleAvatarUpload(event)">
+                    </div>
+                    <div class="avatar-grid">
+                        <div class="avatar-item" data-icon="user" onclick="changeAvatar('user')"><i data-lucide="user"></i></div>
+                        <div class="avatar-item" data-icon="zap" onclick="changeAvatar('zap')"><i data-lucide="zap"></i></div>
+                        <div class="avatar-item" data-icon="heart" onclick="changeAvatar('heart')"><i data-lucide="heart"></i></div>
+                        <div class="avatar-item" data-icon="star" onclick="changeAvatar('star')"><i data-lucide="star"></i></div>
+                        <div class="avatar-item" data-icon="shield" onclick="changeAvatar('shield')"><i data-lucide="shield"></i></div>
+                        <div class="avatar-item" data-icon="crown" onclick="changeAvatar('crown')"><i data-lucide="crown"></i></div>
+                        <div class="avatar-item" data-icon="ghost" onclick="changeAvatar('ghost')"><i data-lucide="ghost"></i></div>
+                        <div class="avatar-item" data-icon="coffee" onclick="changeAvatar('coffee')"><i data-lucide="coffee"></i></div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px;">
+                    <div style="background: var(--bg-input); padding: 20px; border-radius: 20px; text-align: center;">
+                        <i data-lucide="heart" style="color: var(--accent-color); margin-bottom: 10px;"></i>
+                        <h3 id="profile-fav-count" style="font-size: 1.4rem;">0</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Товарів в обраному</p>
+                    </div>
+                    <div style="background: var(--bg-input); padding: 20px; border-radius: 20px; text-align: center;">
+                        <i data-lucide="calendar" style="color: var(--accent-color); margin-bottom: 10px;"></i>
+                        <h3 id="profile-date" style="font-size: 1.1rem;">-</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Зареєстровано</p>
+                    </div>
+                </div>
+
+                <button class="auth-submit" onclick="handleLogout()" style="background: var(--danger-color); display: flex; align-items: center; justify-content: center; gap: 10px; width: auto; padding: 14px 40px;">
+                    <i data-lucide="log-out" style="width: 20px; height: 20px;"></i>
+                    Вийти з акаунту
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-layout" id="detail-view">
         <div style="width: 100%;">
-            <button class="page-btn" onclick="goBack()" id="btn-back" style="margin-bottom: 20px;">← Назад</button>
+            <button class="page-btn" onclick="goBack()" style="margin-bottom: 20px;">
+                <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+                <span id="btn-back">Назад</span>
+            </button>
             <div id="single-item-container"></div>
         </div>
     </div>
@@ -667,7 +808,7 @@
                 fPc: "ПК Компоненти", fDrone: "Дрони", fRetro: "Ретро ігри", f3d: "3D Друк",
                 fFavs: "❤️ Обране",
                 addedFav: "Додано до обраного ❤️", removedFav: "Видалено з обраного",
-                btnPrev: "← Назад", btnNext: "Далі →", btnBack: "← Назад",
+                btnPrev: "← Назад", btnNext: "Далі →", btnBack: "Назад",
                 noItems: "Нічого не знайдено за цим запитом.", viewItem: "ПЕРЕГЛЯНУТИ", placeBid: "ЗРОБИТИ СТАВКУ",
                 condition: "Стан", descTitle: "Опис", openEbay: "Відкрити на eBay", ended: "Завершено",
                 timeLeft: "Залишилось", auction: "АУКЦІОН", bids: "ставок", filterTitle: "Категорії",
@@ -687,7 +828,7 @@
                 fPc: "PC Parts", fDrone: "Drones", fRetro: "Retro Gaming", f3d: "3D Printing",
                 fFavs: "❤️ Favorites",
                 addedFav: "Added to favorites ❤️", removedFav: "Removed from favorites",
-                btnPrev: "← Prev", btnNext: "Next →", btnBack: "← Back",
+                btnPrev: "← Prev", btnNext: "Next →", btnBack: "Back",
                 noItems: "No items found for this query.", viewItem: "VIEW", placeBid: "PLACE BID",
                 condition: "Condition", descTitle: "Description", openEbay: "Open on eBay", ended: "Ended",
                 timeLeft: "Left", auction: "AUCTION", bids: "bids", filterTitle: "Categories",
@@ -707,7 +848,7 @@
                 fPc: "PC Componentes", fDrone: "Drones", fRetro: "Juegos Retro", f3d: "Impresión 3D",
                 fFavs: "❤️ Favoritos",
                 addedFav: "Añadido a favoritos ❤️", removedFav: "Eliminado de favoritos",
-                btnPrev: "← Ant", btnNext: "Sig →", btnBack: "← Volver",
+                btnPrev: "← Ant", btnNext: "Sig →", btnBack: "Volver",
                 noItems: "No se encontraron artículos.", viewItem: "VER", placeBid: "PUJAR",
                 condition: "Condición", descTitle: "Descripción", openEbay: "Abrir en eBay", ended: "Finalizado",
                 timeLeft: "Queda", auction: "SUBASTA", bids: "pujas", filterTitle: "Categorías",
@@ -888,7 +1029,15 @@
             const favTab = document.getElementById('f-favs');
             if (favTab) favTab.innerText = t.fFavs;
 
+            const backProfileBtn = document.getElementById('btn-back-profile');
+            if (backProfileBtn) backProfileBtn.innerText = t.btnBack;
+
             document.getElementById('filter-title').innerText = t.filterTitle;
+            
+            // Оновлюємо інтерфейс користувача, щоб назва ролі переклалася
+            if (typeof updateUserUI === 'function') {
+                updateUserUI();
+            }
             document.getElementById('btn-apply-price').innerText = t.applyFilter;
 
             const lblIncShip = document.getElementById('lbl-include-shipping');
@@ -937,26 +1086,129 @@
             setTimeout(() => notif.remove(), 3000);
         }
 
-        function toggleFavorite(event, itemId) {
+        async function syncLocalFavorites() {
+            if (!currentUser || favoriteItems.length === 0) return;
+            
+            console.log("🔄 Синхронізація обраного...");
+            for (const item of favoriteItems) {
+                // Відправляємо доставку ТІЛЬКИ якщо це не заглушка "⏳"
+                let shippingHtml = item.shippingHtml || '';
+                if (shippingHtml.includes('⏳')) shippingHtml = '';
+
+                if (!shippingHtml && item.shippingOptions) {
+                    const price = item.currentBidPrice?.value || item.price?.value || item.price || '0.00';
+                    const curr = item.currentBidPrice?.currency || item.price?.currency || 'USD';
+                    shippingHtml = getShippingHtml(item, price, curr, item.itemId, false);
+                    item.shippingHtml = shippingHtml;
+                }
+
+                if (!shippingHtml) continue;
+
+                try {
+                    await fetch('/api/favorites/toggle', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            itemId: item.itemId,
+                            title: item.title,
+                            price: item.currentBidPrice?.value || item.price?.value || item.price || '0.00',
+                            image: item.image?.imageUrl || item.image || '',
+                            url: item.itemWebUrl || item.url || '',
+                            shippingInfo: shippingHtml,
+                            updateOnly: true
+                        }),
+                        credentials: 'include'
+                    });
+                } catch (e) { console.error("Помилка синхронізації елемента:", item.itemId); }
+            }
+        }
+
+        async function fetchUserFavorites() {
+            if (!currentUser) return;
+            
+            // Спочатку спробуємо завантажити те, що вже є на сервері
+            try {
+                const res = await fetch('/api/favorites', { credentials: 'include' });
+                if (res.ok) {
+                    const serverData = await res.json();
+                    
+                    if (serverData.length === 0 && favoriteItems.length > 0) {
+                        // Якщо на сервері порожньо, а локально є — відправляємо локальні
+                        await syncLocalFavorites();
+                        // Після синхронізації завантажуємо оновлений список
+                        const retryRes = await fetch('/api/favorites', { credentials: 'include' });
+                        if (retryRes.ok) {
+                            const updatedData = await retryRes.json();
+                            updateFavoriteItems(updatedData);
+                        }
+                    } else {
+                        updateFavoriteItems(serverData);
+                    }
+                }
+            } catch (e) { console.error("Помилка завантаження обраного:", e); }
+        }
+
+        function updateFavoriteItems(data) {
+            const oldFavs = [...favoriteItems];
+            favoriteItems = data.map(f => {
+                const existing = oldFavs.find(it => it.itemId === f.itemId);
+                let sHtml = f.shippingInfo || (existing ? existing.shippingHtml : '');
+                // Очищаємо від заглушок, якщо вони пролізли в базу
+                if (sHtml && sHtml.includes('⏳')) sHtml = '';
+                
+                return {
+                    itemId: f.itemId,
+                    title: f.title,
+                    price: { value: f.price, currency: 'USD' },
+                    image: { imageUrl: f.image },
+                    itemWebUrl: f.url,
+                    shippingHtml: sHtml
+                };
+            });
+            localStorage.setItem('savedAuctions', JSON.stringify(favoriteItems));
+            if (currentCategory === 'favorites') renderItems(favoriteItems, true);
+        }
+
+        async function toggleFavorite(event, itemId) {
             event.stopPropagation();
             const heart = event.currentTarget;
             const isFav = favoriteItems.some(item => item.itemId === itemId);
             const t = translations[currentLang];
 
+            // Якщо користувач увійшов, синхронізуємо з сервером
+            if (currentUser) {
+                const itemData = currentFetchedItems.find(item => item.itemId === itemId) || favoriteItems.find(item => item.itemId === itemId);
+                if (itemData) {
+                    try {
+                        const res = await fetch('/api/favorites/toggle', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                itemId: itemData.itemId,
+                                title: itemData.title,
+                                price: itemData.currentBidPrice?.value || itemData.price?.value || itemData.price || '0.00',
+                                image: itemData.image?.imageUrl || itemData.image || '',
+                                url: itemData.itemWebUrl || itemData.url || '',
+                                shippingInfo: itemData.shippingHtml || ''
+                            }),
+                            credentials: 'include'
+                        });
+                        if (!res.ok) { showNotification("Помилка синхронізації", "error"); return; }
+                    } catch (e) { showNotification("Сервер недоступний", "error"); return; }
+                }
+            }
+
             if (isFav) {
                 favoriteItems = favoriteItems.filter(item => item.itemId !== itemId);
                 heart.classList.remove('active');
                 showNotification(t.removedFav, "info");
-
-                if (currentCategory === 'favorites') {
-                    renderItems(favoriteItems, true);
-                }
+                if (currentCategory === 'favorites') renderItems(favoriteItems, true);
             } else {
-                const itemToAdd = currentFetchedItems.find(item => item.itemId === itemId) || favoriteItems.find(item => item.itemId === itemId);
+                const itemToAdd = currentFetchedItems.find(item => item.itemId === itemId);
                 if (itemToAdd) {
                     favoriteItems.push(itemToAdd);
                     heart.classList.add('active');
-                    showNotification(t.addedFav, "info");
+                    showNotification(t.addedFav, "success");
                 }
             }
             localStorage.setItem('savedAuctions', JSON.stringify(favoriteItems));
@@ -1231,6 +1483,44 @@
             });
         }
 
+        async function fetchShippingBackground(itemId) {
+            if (!itemId) return;
+            try {
+                const res = await fetch(`/api/item/${itemId}`);
+                if (!res.ok) return;
+                const itemData = await res.json();
+                
+                const price = itemData.currentBidPrice?.value || itemData.price?.value || '0.00';
+                const curr = itemData.currentBidPrice?.currency || itemData.price?.currency || 'USD';
+                const shipHtml = getShippingHtml(itemData, price, curr, itemId, false);
+                
+                // Оновлюємо локальний список
+                const favIdx = favoriteItems.findIndex(i => i.itemId === itemId);
+                if (favIdx !== -1) {
+                    favoriteItems[favIdx].shippingHtml = shipHtml;
+                    localStorage.setItem('savedAuctions', JSON.stringify(favoriteItems));
+                    
+                    // Якщо ми зараз у вкладці "Favorites" — перерендерим (тихо)
+                    const shipEl = document.getElementById(`ship-${itemId}`);
+                    if (shipEl) shipEl.outerHTML = shipHtml;
+                    
+                    // Відправляємо на сервер, щоб назавжди зберегти для всіх пристроїв
+                    if (currentUser) {
+                        fetch('/api/favorites/toggle', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                itemId: itemId,
+                                shippingInfo: shipHtml,
+                                updateOnly: true
+                            }),
+                            credentials: 'include'
+                        });
+                    }
+                }
+            } catch (e) { console.error("Фонова помилка доставки:", e); }
+        }
+
         function renderItems(items, isPreFiltered = false) {
             const container = document.getElementById('auction-results'); const t = translations[currentLang]; container.innerHTML = '';
 
@@ -1248,8 +1538,8 @@
             if (!itemsToRender.length) { container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); font-size: 1.1rem; padding-top: 20px;">${t.noItems}</p>`; return; }
 
             itemsToRender.forEach(item => {
-                const imgUrl = item.image?.imageUrl || 'https://dummyimage.com/300x200/cccccc/000000&text=No+Img';
-                const price = item.currentBidPrice?.value || item.price?.value || '0.00';
+                const imgUrl = item.image?.imageUrl || item.image || 'https://dummyimage.com/300x200/cccccc/000000&text=No+Img';
+                const price = item.currentBidPrice?.value || item.price?.value || item.price || '0.00';
                 const curr = item.currentBidPrice?.currency || item.price?.currency || 'USD';
                 const isAuct = item.buyingOptions?.includes('AUCTION');
 
@@ -1258,7 +1548,18 @@
                     const time = formatTimeLeft(item.itemEndDate);
                     metaHtml = `<span class="bid-count" id="bids-${item.itemId}">${item.bidCount||0} ${t.bids}</span><span class="auction-info" data-end="${item.itemEndDate}" style="color: ${time.color};">${time.text}</span>`;
                 }
-                const shipTotalHtml = getShippingHtml(item, price, curr, item.itemId, false);
+
+                // РОЗУМНА ДОСТАВКА
+                let shipTotalHtml = item.shippingHtml || "";
+                
+                if (!shipTotalHtml && currentCategory === 'favorites') {
+                    // Якщо даних немає — запускаємо фонову перевірку
+                    shipTotalHtml = `<div id="ship-${item.itemId}" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px;">⏳ Перевірка...</div>`;
+                    fetchShippingBackground(item.itemId);
+                } else if (!shipTotalHtml) {
+                    shipTotalHtml = getShippingHtml(item, price, curr, item.itemId, false);
+                    item.shippingHtml = shipTotalHtml;
+                }
 
                 const isFav = favoriteItems.some(fav => fav.itemId === item.itemId);
                 const heartSvg = `<svg class="heart-icon ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${item.itemId}')" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
@@ -1368,7 +1669,17 @@
         }
 
         async function openItem(itemId) {
-            document.getElementById('main-view').style.display = 'none'; document.getElementById('detail-view').style.display = 'flex';
+            // Знаходимо товар у поточному списку, щоб зберегти дані про доставку з пошуку
+            const summaryItem = currentFetchedItems.find(it => it.itemId === itemId);
+            const fallbackShipping = summaryItem ? summaryItem.shippingHtml : '';
+
+            document.getElementById('main-view').style.display = 'none'; 
+            document.getElementById('detail-view').style.display = 'flex';
+            
+            // Сховуємо кнопку фільтрів на сторінці товару
+            const fab = document.querySelector('.fab-filters');
+            if (fab) fab.style.display = 'none';
+
             const container = document.getElementById('single-item-container'); const t = translations[currentLang];
             container.setAttribute('data-current-id', itemId);
             container.innerHTML = `<div class="loader coil" style="margin: 100px auto;"><span></span><span></span><span></span><span></span></div>`;
@@ -1401,7 +1712,12 @@
                     thumbsHtml = `<div class="thumbnails-wrapper">${navBtns}</div>`;
                 }
 
-                const shipTotalHtml = getShippingHtml(item, price, curr, itemId, true);
+                let shipTotalHtml = getShippingHtml(item, price, curr, itemId, true);
+                
+                // FALLBACK: Якщо в деталях доставка "неможлива", але в списку була - показуємо ту, що була в списку
+                if ((!shipTotalHtml || shipTotalHtml.includes('❌') || shipTotalHtml.includes(t.shippingUnknown)) && fallbackShipping && !fallbackShipping.includes('❌')) {
+                    shipTotalHtml = fallbackShipping.replace(/id="[^"]*"/g, 'id="detail-shipping-info"');
+                }
 
                 container.innerHTML = `<h2>${item.title}</h2><div class="detail-content"><div class="gallery-container"><div class="main-image-container" onclick="openLightbox(currentMainImageIndex)"><img id="main-product-image" src="${mainImgUrl}"></div>${thumbsHtml}</div><div class="detail-info"><div class="timer-text" id="timer-text" style="color:var(--danger-color); margin-bottom:10px;"></div><p id="detail-price" data-original-price="${price}" data-original-currency="${curr}" style="font-size: 2.5rem; font-weight: bold; margin-bottom: 5px;">${convertPrice(price, curr)}</p>${shipTotalHtml}<div class="desc-box"><strong>${t.descTitle}</strong><br><br><span id="item-description">${originalDescription}</span></div><div style="display:flex; gap:10px; margin-top:20px;"><button class="page-btn" onclick="translateDesc('UK')">UA</button><button class="page-btn" onclick="translateDesc('EN')">EN</button><button class="page-btn" onclick="translateDesc('ES')">ES</button></div><a href="${item.itemWebUrl||'#'}" target="_blank" class="buy-btn highlight" style="display:block; text-align:center; margin-top: 30px; padding:16px;">${t.openEbay}</a></div></div>`;
 
@@ -1428,7 +1744,21 @@
             } catch(e){} finally { el.style.opacity = '1'; }
         }
 
-        function goBack() { clearInterval(auctionTimerInterval); document.getElementById('detail-view').style.display = 'none'; document.getElementById('main-view').style.display = 'flex'; }
+        function goBack() { 
+            clearInterval(auctionTimerInterval); 
+            document.getElementById('detail-view').style.display = 'none'; 
+            document.getElementById('profile-view').style.display = 'none'; 
+            document.getElementById('main-view').style.display = 'flex'; 
+            
+            // Повертаємо кнопку фільтрів при поверненні до пошуку
+            if (window.innerWidth <= 900) {
+                const fab = document.querySelector('.fab-filters');
+                if (fab) fab.style.display = 'flex';
+            }
+            
+            // Перемальовуємо іконки
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
 
         async function pollPrices() {
             if (isPolling) return; isPolling = true;
@@ -1478,6 +1808,325 @@
         });
 
         window.onload = () => document.getElementById('full-page-loader').classList.add('hidden');
+    </script>
+    <!-- AUTH MODAL -->
+    <div id="authModal" class="auth-modal" onclick="if(event.target===this) closeAuthModal()">
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="loginTab" onclick="switchAuthTab('login')">Вхід</button>
+                <button class="auth-tab" id="registerTab" onclick="switchAuthTab('register')">Реєстрація</button>
+            </div>
+            
+            <div id="authError" class="auth-error"></div>
+            
+            <form class="auth-form" onsubmit="handleAuthSubmit(event)">
+                <div class="auth-input-group">
+                    <label id="label-username">Ім'я користувача</label>
+                    <input type="text" id="authUsername" class="auth-input" required placeholder="Введіть ваш логін">
+                </div>
+                <div class="auth-input-group">
+                    <label id="label-password">Пароль</label>
+                    <input type="password" id="authPassword" class="auth-input" required placeholder="Мінімум 6 символів">
+                </div>
+                <button type="submit" class="auth-submit" id="authSubmitBtn">Увійти</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentAuthMode = 'login';
+
+        async function handleAuthSubmit(event) {
+            event.preventDefault();
+            console.log("Handle auth submit called:", currentAuthMode);
+            const usernameInput = document.getElementById('authUsername');
+            const passwordInput = document.getElementById('authPassword');
+            const errorEl = document.getElementById('authError');
+            
+            if (!usernameInput || !passwordInput) {
+                console.error("Auth inputs not found!");
+                return;
+            }
+
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+            
+            const endpoint = currentAuthMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+            console.log("Fetching endpoint:", endpoint);
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await res.json();
+                console.log("Auth response data:", data);
+
+                if (res.ok) {
+                    currentUser = data.user;
+                    closeAuthModal();
+                    updateUserUI();
+                    showNotification(currentAuthMode === 'login' ? "Ви успішно увійшли!" : "Реєстрація успішна!", "success");
+                    fetchUserFavorites();
+                } else {
+                    errorEl.innerText = data.error || "Помилка авторизації";
+                    errorEl.style.display = 'block';
+                }
+            } catch (e) {
+                console.error("Auth error:", e);
+                errorEl.innerText = "Сервер недоступний";
+                errorEl.style.display = 'block';
+            }
+        }
+
+        function switchAuthTab(mode) {
+            currentAuthMode = mode;
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const errorEl = document.getElementById('authError');
+            
+            errorEl.style.display = 'none';
+            
+            if (mode === 'login') {
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                submitBtn.innerText = "Увійти";
+            } else {
+                loginTab.classList.remove('active');
+                registerTab.classList.add('active');
+                submitBtn.innerText = "Зареєструватися";
+            }
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('authModal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout');
+                currentUser = null;
+                goBack();
+                updateUserUI();
+                showNotification("Ви вийшли з акаунту", "info");
+            } catch (e) { console.error("Помилка виходу:", e); }
+        }
+
+        async function checkUserStatus() {
+            try {
+                const res = await fetch('/api/auth/me');
+                const data = await res.json();
+                if (data.user) {
+                    currentUser = data.user;
+                    updateUserUI();
+                    fetchUserFavorites(); 
+                }
+            } catch (e) { console.error("Помилка перевірки статусу:", e); }
+        }
+
+        function toggleUserPage() {
+            if (!currentUser) {
+                const modal = document.getElementById('authModal');
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+            } else {
+                document.getElementById('main-view').style.display = 'none';
+                document.getElementById('detail-view').style.display = 'none';
+                document.getElementById('profile-view').style.display = 'flex';
+                
+                // Ховаємо кнопку фільтрів та селектор аватарки
+                const fab = document.querySelector('.fab-filters');
+                if (fab) fab.style.display = 'none';
+                document.getElementById('avatar-selector').style.display = 'none';
+                
+                updateUserUI();
+            }
+        }
+
+        function toggleAvatarSelector() {
+            const el = document.getElementById('avatar-selector');
+            if (el) {
+                const isHidden = el.style.display === 'none';
+                el.style.display = isHidden ? 'block' : 'none';
+                console.log("Avatar selector toggled:", isHidden ? "visible" : "hidden");
+            }
+        }
+
+        async function changeAvatar(iconName) {
+            console.log("Changing avatar to:", iconName.length > 50 ? "custom image" : iconName);
+            try {
+                const res = await fetch('/api/user/update_avatar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ avatar: iconName }),
+                    credentials: 'include'
+                });
+                
+                if (res.ok) {
+                    currentUser.avatar = iconName;
+                    updateUserUI();
+                    document.getElementById('avatar-selector').style.display = 'none';
+                    showNotification("Аватарку оновлено!", "success");
+                } else {
+                    const err = await res.json();
+                    showNotification(err.error || "Помилка оновлення", "error");
+                }
+            } catch (e) { 
+                console.error("Change avatar error:", e);
+                showNotification("Сервер недоступний", "error"); 
+            }
+        }
+
+        async function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 1 * 1024 * 1024) {
+                showNotification("Файл занадто великий (макс. 1МБ)", "error");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64Data = e.target.result;
+                // Невелике стиснення та перевірка формату
+                await changeAvatar(base64Data);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateUserUI() {
+            const nameEl = document.getElementById('user-display-name');
+            const profileNameEl = document.getElementById('profile-username');
+            const profileDateEl = document.getElementById('profile-date');
+            const profileFavCountEl = document.getElementById('profile-fav-count');
+            const adminBadge = document.getElementById('admin-badge');
+            const profileRoleText = document.getElementById('profile-role-text');
+            
+            const headerBtn = document.querySelector('.user-btn');
+            const profileAvatarContainer = document.querySelector('.avatar-preview-btn div');
+
+            if (currentUser) {
+                console.log("Current user status:", currentUser);
+                const avatar = currentUser.avatar || 'user';
+                const isCustom = avatar.startsWith('data:image');
+                const isSuperAdmin = currentUser.role === 'superadmin';
+                const isAdmin = currentUser.role === 'admin';
+                const isModerator = currentUser.role === 'moderator';
+                const isSupport = currentUser.role === 'support';
+                const isElevated = isSuperAdmin || isAdmin || isModerator || isSupport;
+
+                nameEl.innerText = currentUser.username;
+
+                // Оновлюємо бейдж та текст ролі
+                if (adminBadge) {
+                    adminBadge.style.display = isElevated ? 'inline-block' : 'none';
+                    if (isSuperAdmin) {
+                        adminBadge.innerText = currentLang === 'uk' ? 'Головний Адмін' : 'Super Admin';
+                        adminBadge.style.background = 'linear-gradient(45deg, #f59e0b, #fbbf24)';
+                        adminBadge.style.color = '#000';
+                    } else if (isAdmin) {
+                        adminBadge.innerText = currentLang === 'uk' ? 'Адміністратор' : 'Admin';
+                        adminBadge.style.background = 'linear-gradient(45deg, #3b82f6, #60a5fa)';
+                        adminBadge.style.color = '#fff';
+                    } else if (isModerator) {
+                        adminBadge.innerText = currentLang === 'uk' ? 'Модератор' : 'Moderator';
+                        adminBadge.style.background = 'linear-gradient(45deg, #f97316, #fb923c)';
+                        adminBadge.style.color = '#fff';
+                    } else if (isSupport) {
+                        adminBadge.innerText = currentLang === 'uk' ? 'Сапорт' : 'Support';
+                        adminBadge.style.background = 'linear-gradient(45deg, #10b981, #34d399)';
+                        adminBadge.style.color = '#fff';
+                    }
+                }
+
+                if (profileRoleText) {
+                    const roleNames = {
+                        superadmin: { uk: 'Головний адміністратор', en: 'Super Administrator' },
+                        admin: { uk: 'Адміністратор', en: 'Administrator' },
+                        moderator: { uk: 'Модератор', en: 'Moderator' },
+                        support: { uk: 'Сапорт', en: 'Support' },
+                        user: { uk: 'Учасник системи Auction', en: 'Auction System Member' }
+                    };
+                    
+                    const currentRole = currentUser.role || 'user';
+                    const displayLang = (currentLang === 'uk') ? 'uk' : 'en'; 
+                    
+                    profileRoleText.innerText = roleNames[currentRole]?.[displayLang] || roleNames.user[displayLang];
+                    
+                    if (isSuperAdmin) {
+                        profileRoleText.style.color = '#fbbf24';
+                        profileRoleText.style.fontWeight = '800';
+                    } else if (isAdmin) {
+                        profileRoleText.style.color = '#60a5fa';
+                        profileRoleText.style.fontWeight = '700';
+                    } else if (isModerator) {
+                        profileRoleText.style.color = '#fb923c';
+                        profileRoleText.style.fontWeight = '700';
+                    } else if (isSupport) {
+                        profileRoleText.style.color = '#34d399';
+                        profileRoleText.style.fontWeight = '600';
+                    } else {
+                        profileRoleText.style.color = '#a5b4fc';
+                        profileRoleText.style.fontWeight = '500';
+                    }
+                }
+                // Відображення аватарки у профілі
+                if (profileAvatarContainer) {
+                    if (isCustom) {
+                        profileAvatarContainer.innerHTML = `<img src="${avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    } else {
+                        profileAvatarContainer.innerHTML = `<i data-lucide="${avatar}" style="width: 40px; height: 40px;"></i>`;
+                    }
+                }
+                
+                // Оновлюємо в хедері (міні-іконка)
+                const currentMiniIcon = headerBtn.querySelector('i, img');
+                if (currentMiniIcon) {
+                    if (isCustom) {
+                        const img = document.createElement('img');
+                        img.src = avatar;
+                        img.style = "width: 20px; height: 20px; object-fit: cover; border-radius: 50%;";
+                        currentMiniIcon.replaceWith(img);
+                    } else {
+                        const icon = document.createElement('i');
+                        icon.setAttribute('data-lucide', avatar);
+                        icon.style.width = "20px"; icon.style.height = "20px";
+                        currentMiniIcon.replaceWith(icon);
+                    }
+                }
+
+                if (profileNameEl) profileNameEl.innerText = currentUser.username;
+                if (profileDateEl) profileDateEl.innerText = currentUser.created_at;
+                if (profileFavCountEl) profileFavCountEl.innerText = favoriteItems.length;
+
+                // Позначаємо активну іконку в сітці
+                document.querySelectorAll('.avatar-item').forEach(item => {
+                    item.classList.toggle('active', item.getAttribute('data-icon') === avatar);
+                });
+            } else {
+                nameEl.innerText = "Увійти";
+                const currentIcon = headerBtn.querySelector('i, img');
+                if (currentIcon) {
+                    const icon = document.createElement('i');
+                    icon.setAttribute('data-lucide', 'user');
+                    currentIcon.replaceWith(icon);
+                }
+            }
+            
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        // Ініціалізація користувача
+        document.addEventListener('DOMContentLoaded', () => {
+            checkUserStatus();
+        });
     </script>
 </body>
 </html>
